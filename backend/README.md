@@ -63,6 +63,43 @@ Supabase Edge Functions have a mandatory directory structure requiring functions
 | `admin-analytics` | `admin-analytics.ts` | System-wide booking trends and provider performance metrics |
 | `provider-analytics` | `provider-analytics.ts` | Individual provider analytics dashboard data |
 
+### AI & Chatbot
+
+| Function | File | Description |
+|----------|------|-------------|
+| `ai-chat` | `ai-chat.ts` | AI chatbot for customer support with OpenAI integration |
+
+### Coupons & Promotions
+
+| Function | File | Description |
+|----------|------|-------------|
+| `validate-coupon` | `validate-coupon.ts` | Validate coupon codes and calculate discounts |
+
+### Security & Authentication
+
+| Function | File | Description |
+|----------|------|-------------|
+| `setup-2fa` | `setup-2fa.ts` | Two-factor authentication setup with TOTP |
+| `send-sms` | `send-sms.ts` | Send SMS notifications via Twilio |
+
+### GDPR & Compliance
+
+| Function | File | Description |
+|----------|------|-------------|
+| `export-user-data` | `export-user-data.ts` | GDPR-compliant user data export |
+
+### Recurring & Scheduling
+
+| Function | File | Description |
+|----------|------|-------------|
+| `create-recurring-booking` | `create-recurring-booking.ts` | Create recurring appointment schedules |
+
+### Gamification
+
+| Function | File | Description |
+|----------|------|-------------|
+| `check-badge-eligibility` | `check-badge-eligibility.ts` | Check and award badges based on achievements |
+
 ### Video & Calendar
 
 | Function | File | Description |
