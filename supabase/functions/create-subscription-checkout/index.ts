@@ -123,7 +123,7 @@ Deno.serve(async (req) => {
             customerId = customers.data[0].id;
         }
 
-        const origin = req.headers.get("origin") || "https://frpxrbptxkgofompesvd.lovableproject.com";
+        const origin = req.headers.get("origin") || "https://bookease9.lovable.app";
 
         // Create checkout session for one-time subscription payment
         const session = await stripe.checkout.sessions.create({

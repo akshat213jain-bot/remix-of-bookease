@@ -108,7 +108,7 @@ Deno.serve(async (req) => {
             );
         }
 
-        const origin = req.headers.get("origin") || "https://frpxrbptxkgofompesvd.lovableproject.com";
+        const origin = req.headers.get("origin") || "https://bookease9.lovable.app";
 
         switch (action) {
             case "get_account_status": {

@@ -73,7 +73,7 @@ async function sendWebPush(
                 "TTL": "86400", // 24 hours
                 "Urgency": "normal",
             },
-            body: encryptedPayload,
+            body: encryptedPayload.buffer as ArrayBuffer,
         });
 
         if (response.status === 201 || response.status === 200) {
@@ -115,7 +115,7 @@ async function createVapidAuthHeader(
     const privateKeyBytes = base64UrlDecode(privateKey);
     const cryptoKey = await crypto.subtle.importKey(
         "pkcs8",
-        privateKeyBytes,
+        privateKeyBytes.buffer as ArrayBuffer,
         { name: "ECDSA", namedCurve: "P-256" },
         false,
         ["sign"]
@@ -160,7 +160,7 @@ async function encryptPayload(
     const clientPublicKeyBytes = base64UrlDecode(p256dh);
     const clientPublicKey = await crypto.subtle.importKey(
         "raw",
-        clientPublicKeyBytes,
+        clientPublicKeyBytes.buffer as ArrayBuffer,
         { name: "ECDH", namedCurve: "P-256" },
         false,
         []
@@ -190,7 +190,7 @@ async function encryptPayload(
         {
             name: "HKDF",
             hash: "SHA-256",
-            salt: authSecretBytes,
+            salt: authSecretBytes.buffer as ArrayBuffer,
             info: info,
         },
         keyMaterial,
