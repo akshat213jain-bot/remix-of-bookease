@@ -57,6 +57,7 @@ const validateNotificationInput = (body: Record<string, unknown>): { valid: bool
     "payment_success",
     "payment_failed",
     "payment_refunded",
+    "payment_reminder",
     "success",
     "error",
     "reschedule_request",
@@ -242,7 +243,7 @@ Deno.serve(async (req) => {
           } catch {
             // ignore
           }
-          
+
           if (!emailResponse.ok) {
             console.error(`Brevo email send failed (${emailResponse.status}):`, responseText);
             console.error("This usually means the sender email is not verified in Brevo. Please verify your sender email in your Brevo dashboard.");
@@ -304,6 +305,7 @@ function getEmailSubject(type: string, title: string): string {
     payment_success: "💳 Payment Successful",
     payment_failed: "⚠️ Payment Failed",
     payment_refunded: "↩️ Refund Processed",
+    payment_reminder: "💳 Payment Reminder",
     success: "✅ Success",
     error: "⚠️ Action Required",
     reschedule_request: "📅 Reschedule Request",
@@ -329,6 +331,7 @@ function generateEmailHtml(type: string, title: string, message: string, recipie
     payment_success: "#10B981",
     payment_failed: "#EF4444",
     payment_refunded: "#F59E0B",
+    payment_reminder: "#F59E0B",
     success: "#10B981",
     error: "#EF4444",
     reschedule_request: "#F59E0B",

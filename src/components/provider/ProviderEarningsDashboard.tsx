@@ -21,6 +21,7 @@ import {
   ArrowDownRight,
   Wallet,
   PiggyBank,
+  AlertCircle,
 } from "lucide-react";
 import {
   BarChart,
@@ -37,9 +38,11 @@ import {
   Cell,
 } from "recharts";
 import { useProviderEarnings } from "@/hooks/useProviderEarnings";
+import { useProviderPendingPayments } from "@/hooks/useProviderPendingPayments";
 import { format, parseISO } from "date-fns";
 
 import { formatCurrency, CURRENCY_SYMBOL } from "@/lib/currency";
+import PendingPaymentsPanel from "./PendingPaymentsPanel";
 
 const formatTime = (time: string) => {
   const [hours, minutes] = time.split(":");
@@ -85,9 +88,9 @@ export const ProviderEarningsDashboard = () => {
   }
 
   // Calculate growth percentages
-  const weeklyGrowth = earnings?.weekly && earnings?.daily 
-    ? earnings.daily.total > 0 
-      ? ((earnings.weekly.total / 7 - earnings.daily.total) / earnings.daily.total) * 100 
+  const weeklyGrowth = earnings?.weekly && earnings?.daily
+    ? earnings.daily.total > 0
+      ? ((earnings.weekly.total / 7 - earnings.daily.total) / earnings.daily.total) * 100
       : 0
     : 0;
 
@@ -99,7 +102,7 @@ export const ProviderEarningsDashboard = () => {
 
   // Prepare chart data
   const chartData = monthlyTrends || [];
-  
+
   const distributionData = [
     { name: "This Week", value: earnings?.weekly?.total || 0 },
     { name: "Previous", value: (earnings?.monthly?.total || 0) - (earnings?.weekly?.total || 0) },
@@ -190,6 +193,14 @@ export const ProviderEarningsDashboard = () => {
         <TabsList>
           <TabsTrigger value="overview">Overview</TabsTrigger>
           <TabsTrigger value="transactions">Transactions</TabsTrigger>
+          <TabsTrigger value="pending" className="relative">
+            Pending Payments
+            {earnings?.pending?.count && earnings.pending.count > 0 && (
+              <span className="ml-2 inline-flex items-center justify-center px-2 py-0.5 text-xs font-medium bg-orange-500 text-white rounded-full">
+                {earnings.pending.count}
+              </span>
+            )}
+          </TabsTrigger>
           <TabsTrigger value="payouts">Payouts</TabsTrigger>
         </TabsList>
 
@@ -208,23 +219,23 @@ export const ProviderEarningsDashboard = () => {
                   <ResponsiveContainer width="100%" height={300}>
                     <BarChart data={chartData}>
                       <CartesianGrid strokeDasharray="3 3" className="stroke-muted" />
-                      <XAxis 
-                        dataKey="month" 
+                      <XAxis
+                        dataKey="month"
                         tick={{ fontSize: 12 }}
                         className="text-muted-foreground"
                       />
-                      <YAxis 
+                      <YAxis
                         tick={{ fontSize: 12 }}
                         tickFormatter={(value) => `$${(value / 100).toFixed(0)}`}
                         className="text-muted-foreground"
                       />
-                      <Tooltip 
+                      <Tooltip
                         formatter={(value: number) => [formatCurrency(value), "Earnings"]}
                         labelFormatter={(label) => `Month: ${label}`}
                       />
-                      <Bar 
-                        dataKey="earnings" 
-                        fill="hsl(var(--primary))" 
+                      <Bar
+                        dataKey="earnings"
+                        fill="hsl(var(--primary))"
                         radius={[4, 4, 0, 0]}
                       />
                     </BarChart>
@@ -268,7 +279,7 @@ export const ProviderEarningsDashboard = () => {
                   <div className="flex items-center justify-between">
                     <span className="text-sm text-muted-foreground">Avg/Appointment</span>
                     <span className="font-semibold">
-                      {earnings?.allTime?.count 
+                      {earnings?.allTime?.count
                         ? formatCurrency((earnings.allTime.total) / earnings.allTime.count)
                         : `${CURRENCY_SYMBOL}0`
                       }
@@ -357,6 +368,10 @@ export const ProviderEarningsDashboard = () => {
           </Card>
         </TabsContent>
 
+        <TabsContent value="pending">
+          <PendingPaymentsPanel />
+        </TabsContent>
+
         <TabsContent value="payouts">
           <Card>
             <CardHeader>
@@ -400,7 +415,7 @@ export const ProviderEarningsDashboard = () => {
                         {payouts.map((payout) => (
                           <TableRow key={payout.id}>
                             <TableCell>
-                              {payout.date 
+                              {payout.date
                                 ? format(parseISO(payout.date), "MMM d, yyyy")
                                 : "—"
                               }

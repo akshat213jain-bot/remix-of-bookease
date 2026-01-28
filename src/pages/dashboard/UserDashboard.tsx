@@ -50,6 +50,7 @@ import PaymentHistoryPanel from "@/components/payments/PaymentHistoryPanel";
 import CalendarSyncCard from "@/components/calendar/CalendarSyncCard";
 import ReviewDialog from "@/components/reviews/ReviewDialog";
 import { InvoiceDownloadButton } from "@/components/payments/InvoiceDownloadButton";
+import { PaymentButton } from "@/components/payments/PaymentButton";
 
 const getStatusBadge = (status: string) => {
   switch (status) {
@@ -78,13 +79,13 @@ const formatTime = (time: string) => {
 
 const UserDashboard = () => {
   const { user, profile, role } = useAuth();
-  const { 
-    appointments, 
-    isLoading, 
-    cancelAppointment, 
+  const {
+    appointments,
+    isLoading,
+    cancelAppointment,
     isCancelling,
     rescheduleAppointment,
-    isRescheduling 
+    isRescheduling
   } = useAppointments();
   const {
     acceptReschedule,
@@ -116,12 +117,12 @@ const UserDashboard = () => {
   };
 
   const today = new Date();
-  
+
   // Filter appointments
   const upcomingAppointments = appointments.filter(a => {
     const appointmentDate = parseISO(a.appointment_date);
-    return (isAfter(appointmentDate, today) || isToday(appointmentDate)) && 
-           (a.status === "approved" || a.status === "pending");
+    return (isAfter(appointmentDate, today) || isToday(appointmentDate)) &&
+      (a.status === "approved" || a.status === "pending");
   });
 
   const pastAppointments = appointments.filter(a => {
@@ -129,12 +130,12 @@ const UserDashboard = () => {
     return isBefore(appointmentDate, today) && !isToday(appointmentDate) || a.status === "completed";
   });
 
-  const cancelledAppointments = appointments.filter(a => 
+  const cancelledAppointments = appointments.filter(a =>
     a.status === "cancelled" || a.status === "rejected"
   );
 
   // Get appointments with pending reschedule requests from providers
-  const rescheduleRequests = appointments.filter(a => 
+  const rescheduleRequests = appointments.filter(a =>
     a.reschedule_requested_by === "provider" && a.proposed_date
   );
 
@@ -183,7 +184,14 @@ const UserDashboard = () => {
     const canJoinVideo = appointment.status === "approved" && isVideoAppointment;
     const canReview = showReviewButton && appointment.status === "completed" && !hasReview(appointment.id);
     const showInvoice = appointment.status === "completed" && appointment.payment_amount && appointment.payment_amount > 0;
-    
+
+    // Show Pay Now button for pending/approved appointments that haven't been paid
+    const canPay =
+      (appointment.status === "pending" || appointment.status === "approved") &&
+      appointment.payment_status !== "paid" &&
+      appointment.provider?.consultation_fee &&
+      appointment.provider.consultation_fee > 0;
+
     return (
       <Card key={appointment.id}>
         <CardContent className="p-6">
@@ -256,10 +264,21 @@ const UserDashboard = () => {
                   variant="outline"
                 />
               )}
-              
+
+              {canPay && (
+                <PaymentButton
+                  appointmentId={appointment.id}
+                  amount={appointment.provider!.consultation_fee!}
+                  providerName={appointment.provider_profile?.full_name || "Provider"}
+                  appointmentDate={appointment.appointment_date}
+                  startTime={appointment.start_time}
+                  size="sm"
+                />
+              )}
+
               {canReview && (
-                <Button 
-                  size="sm" 
+                <Button
+                  size="sm"
                   variant="outline"
                   onClick={() => handleReviewClick(appointment)}
                 >
@@ -267,17 +286,17 @@ const UserDashboard = () => {
                   Leave Review
                 </Button>
               )}
-              
+
               {canJoinVideo && (
-                <Button 
-                  size="sm" 
+                <Button
+                  size="sm"
                   onClick={() => handleVideoClick(appointment)}
                 >
                   <Video className="h-4 w-4 mr-2" />
                   Join Video
                 </Button>
               )}
-              
+
               {showActions && (appointment.status === "approved" || appointment.status === "pending") && (
                 <DropdownMenu>
                   <DropdownMenuTrigger asChild>
@@ -290,7 +309,7 @@ const UserDashboard = () => {
                     <DropdownMenuItem onClick={() => handleRescheduleClick(appointment)}>
                       Reschedule
                     </DropdownMenuItem>
-                    <DropdownMenuItem 
+                    <DropdownMenuItem
                       className="text-destructive"
                       onClick={() => handleCancelClick(appointment)}
                     >
@@ -435,7 +454,7 @@ const UserDashboard = () => {
 
             {/* Calendar Sync */}
             <div className="mt-6">
-              <CalendarSyncCard 
+              <CalendarSyncCard
                 appointments={appointments.map(a => ({
                   id: a.id,
                   appointment_date: a.appointment_date,
@@ -573,8 +592,8 @@ const UserDashboard = () => {
             <Button variant="outline" onClick={() => setCancelDialogOpen(false)}>
               Keep Appointment
             </Button>
-            <Button 
-              variant="destructive" 
+            <Button
+              variant="destructive"
               onClick={handleConfirmCancel}
               disabled={isCancelling}
             >

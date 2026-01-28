@@ -12,7 +12,7 @@ const logStep = (step: string, details?: unknown) => {
 };
 
 interface EarningsRequest {
-  action: "get_earnings" | "get_transactions" | "get_payouts";
+  action: "get_earnings" | "get_transactions" | "get_payouts" | "get_pending_payments";
   provider_id?: string;
   date_from?: string;
   date_to?: string;
@@ -52,7 +52,7 @@ Deno.serve(async (req) => {
 
     const token = authHeader.replace("Bearer ", "");
     const { data: userData, error: userError } = await supabase.auth.getUser(token);
-    
+
     if (userError || !userData.user) {
       logStep("Auth error", { error: userError?.message });
       return new Response(JSON.stringify({ error: "User not authenticated" }), {
@@ -156,7 +156,7 @@ Deno.serve(async (req) => {
         for (let i = 5; i >= 0; i--) {
           const monthStart = new Date(now.getFullYear(), now.getMonth() - i, 1);
           const monthEnd = new Date(now.getFullYear(), now.getMonth() - i + 1, 0);
-          
+
           const monthApps = (appointments || []).filter((a) => {
             const date = new Date(a.payment_date || a.created_at);
             return date >= monthStart && date <= monthEnd;
@@ -172,7 +172,7 @@ Deno.serve(async (req) => {
 
         logStep("Earnings calculated", { monthly: earnings.monthly.total });
 
-        return new Response(JSON.stringify({ 
+        return new Response(JSON.stringify({
           earnings,
           monthlyTrends,
         }), {
@@ -255,11 +255,85 @@ Deno.serve(async (req) => {
 
         const totalPaid = payouts.reduce((sum, p) => sum + (p.amount || 0), 0);
 
-        return new Response(JSON.stringify({ 
+        return new Response(JSON.stringify({
           payouts,
           summary: {
             total_paid: totalPaid,
             payout_count: payouts.length,
+          }
+        }), {
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
+      }
+
+      case "get_pending_payments": {
+        const limit = body.limit || 50;
+
+        // Get appointments with unpaid/pending payment status
+        const { data: appointments, error: appointmentsError } = await supabase
+          .from("appointments")
+          .select(`
+            id, 
+            appointment_date, 
+            start_time,
+            end_time,
+            payment_amount, 
+            payment_status,
+            status,
+            user_id,
+            created_at
+          `)
+          .eq("provider_id", providerProfile.id)
+          .in("payment_status", ["unpaid", "pending"])
+          .in("status", ["pending", "approved"])
+          .order("appointment_date", { ascending: true })
+          .limit(limit);
+
+        if (appointmentsError) {
+          throw new Error(`Failed to fetch pending payments: ${appointmentsError.message}`);
+        }
+
+        // Get user profiles for these appointments
+        const userIds = [...new Set((appointments || []).map(a => a.user_id))];
+        const { data: profiles } = await supabase
+          .from("profiles")
+          .select("user_id, full_name, email")
+          .in("user_id", userIds);
+
+        const profileMap = new Map((profiles || []).map(p => [p.user_id, p]));
+
+        // Get provider's consultation fee
+        const { data: providerData } = await supabase
+          .from("provider_profiles")
+          .select("consultation_fee")
+          .eq("id", providerProfile.id)
+          .single();
+
+        const consultationFee = providerData?.consultation_fee || 0;
+
+        const pendingPayments = (appointments || []).map(a => ({
+          id: a.id,
+          appointment_date: a.appointment_date,
+          start_time: a.start_time,
+          end_time: a.end_time,
+          amount: a.payment_amount || consultationFee,
+          payment_status: a.payment_status,
+          appointment_status: a.status,
+          user_id: a.user_id,
+          consumer_name: profileMap.get(a.user_id)?.full_name || "Unknown",
+          consumer_email: profileMap.get(a.user_id)?.email || "",
+          created_at: a.created_at,
+        }));
+
+        const totalPending = pendingPayments.reduce((sum, p) => sum + (p.amount || 0), 0);
+
+        logStep("Pending payments fetched", { count: pendingPayments.length, total: totalPending });
+
+        return new Response(JSON.stringify({
+          pendingPayments,
+          summary: {
+            total_pending: totalPending,
+            count: pendingPayments.length,
           }
         }), {
           headers: { ...corsHeaders, "Content-Type": "application/json" },

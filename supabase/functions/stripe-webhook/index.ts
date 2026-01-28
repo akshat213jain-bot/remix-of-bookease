@@ -145,24 +145,51 @@ Deno.serve(async (req) => {
                 .single();
 
               if (profile?.email) {
-                // Send email via Resend
-                const resendApiKey = Deno.env.get("RESEND_API_KEY");
-                if (resendApiKey) {
+                // Send email via Brevo (consistent with other email notifications)
+                const brevoApiKey = Deno.env.get("BREVO_API_KEY");
+                if (brevoApiKey) {
                   try {
-                    await fetch("https://api.resend.com/emails", {
+                    const senderEmail = Deno.env.get("BREVO_SENDER_EMAIL") || "noreply@bookease.com";
+                    const senderName = Deno.env.get("BREVO_SENDER_NAME") || "BookEase";
+
+                    const emailPayload = {
+                      sender: { name: senderName, email: senderEmail },
+                      replyTo: { name: senderName, email: senderEmail },
+                      to: [{ email: profile.email, name: profile.full_name || profile.email }],
+                      subject: "💳 Payment Successful - Your Appointment is Confirmed",
+                      htmlContent: generatePaymentSuccessEmail(profile.full_name, session.amount_total || 0),
+                      headers: { "X-Entity-Ref-ID": crypto.randomUUID() },
+                    };
+
+                    const emailResponse = await fetch("https://api.brevo.com/v3/smtp/email", {
                       method: "POST",
                       headers: {
-                        Authorization: `Bearer ${resendApiKey}`,
+                        "api-key": brevoApiKey,
                         "Content-Type": "application/json",
+                        "Accept": "application/json",
                       },
-                      body: JSON.stringify({
-                        from: "BookEase <notifications@resend.dev>",
-                        to: [profile.email],
-                        subject: "💳 Payment Successful - Your Appointment is Confirmed",
-                        html: generatePaymentSuccessEmail(profile.full_name, session.amount_total || 0),
-                      }),
+                      body: JSON.stringify(emailPayload),
                     });
-                    logStep("Payment success email sent", { email: profile.email });
+
+                    if (emailResponse.ok) {
+                      const responseData = await emailResponse.json();
+                      logStep("Payment success email sent via Brevo", { email: profile.email, messageId: responseData?.messageId });
+
+                      // Log to outgoing_emails table
+                      if (responseData?.messageId) {
+                        await supabase.from("outgoing_emails").insert({
+                          message_id: responseData.messageId,
+                          provider: "brevo",
+                          to_emails: [profile.email],
+                          subject: "Payment Successful - Your Appointment is Confirmed",
+                          email_type: "payment_success",
+                          status: "accepted",
+                          sender_email: senderEmail,
+                        });
+                      }
+                    } else {
+                      logStep("Failed to send email via Brevo", { status: emailResponse.status });
+                    }
                   } catch (emailError) {
                     logStep("Failed to send email", { error: String(emailError) });
                   }
