@@ -54,6 +54,8 @@ export const VideoConsultation = ({
   const iframeRef = useRef<HTMLIFrameElement>(null);
   const { toast } = useToast();
 
+  const [paymentAmount, setPaymentAmount] = useState<number | null>(null);
+
   // Check payment status on mount for non-providers
   useEffect(() => {
     const checkPaymentStatus = async () => {
@@ -66,15 +68,19 @@ export const VideoConsultation = ({
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
         const { data, error } = await (supabase as any)
           .from("appointments")
-          .select("payment_status, payment_amount")
+          .select("payment_status, payment_amount, provider:provider_id(consultation_fee, video_consultation_fee)")
           .eq("id", appointmentId)
           .single();
 
         if (error) throw error;
         setPaymentStatus(data?.payment_status || "unpaid");
+        // Use video_consultation_fee if available, otherwise consultation_fee, or default to payment_amount
+        const fee = data?.provider?.video_consultation_fee || data?.provider?.consultation_fee || data?.payment_amount || 500;
+        setPaymentAmount(fee);
       } catch (err) {
         console.error("Failed to check payment status:", err);
         setPaymentStatus("unpaid");
+        setPaymentAmount(500); // Default fallback
       } finally {
         setIsCheckingPayment(false);
       }
@@ -266,11 +272,16 @@ export const VideoConsultation = ({
   const handlePayment = async () => {
     setIsProcessingPayment(true);
     try {
+      // Convert amount from rupees to paise (cents equivalent for INR)
+      const amountInPaise = Math.round((paymentAmount || 500) * 100);
+      
       const { data, error } = await supabase.functions.invoke("create-appointment-payment", {
         body: {
           appointment_id: appointmentId,
-          success_url: `${window.location.origin}/dashboard?payment=success&appointment=${appointmentId}`,
-          cancel_url: `${window.location.origin}/dashboard?payment=cancelled`,
+          amount: amountInPaise,
+          provider_name: providerName || "Provider",
+          appointment_date: appointmentDate,
+          start_time: startTime,
         },
       });
 
