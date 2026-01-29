@@ -8,7 +8,7 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { 
+import {
   Calendar,
   Clock,
   Users,
@@ -29,6 +29,7 @@ import {
   ListChecks,
   Mail,
   Send,
+  IndianRupee,
 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
@@ -60,6 +61,7 @@ import ProviderEarningsDashboard from "@/components/provider/ProviderEarningsDas
 import WaitlistManagementPanel from "@/components/provider/WaitlistManagementPanel";
 import ProviderReviewsPanel from "@/components/provider/ProviderReviewsPanel";
 import ProviderAnalyticsDashboard from "@/components/provider/ProviderAnalyticsDashboard";
+import { PaymentUpdateDialog } from "@/components/provider/PaymentUpdateDialog";
 
 const formatTime = (time: string) => {
   const [hours, minutes] = time.split(":");
@@ -90,13 +92,16 @@ const ProviderDashboard = () => {
   const [activeTab, setActiveTab] = useState<"schedule" | "earnings" | "waitlist" | "reviews" | "analytics">("schedule");
   const { profile } = useAuth();
   const { providerProfile } = useProviderProfile();
-  const { 
+  const {
     appointments,
-    isLoading, 
-    updateStatus, 
+    isLoading,
+    updateStatus,
     isUpdating,
+    updatePayment,
+    isUpdatingPayment,
     getTodayAppointments,
     getPendingAppointments,
+    getUpcomingAppointments,
   } = useProviderAppointments();
   const {
     proposeReschedule,
@@ -117,13 +122,15 @@ const ProviderDashboard = () => {
   const [contactSubject, setContactSubject] = useState("");
   const [contactMessage, setContactMessage] = useState("");
   const [isSendingEmail, setIsSendingEmail] = useState(false);
+  const [paymentDialogOpen, setPaymentDialogOpen] = useState(false);
 
   const todayAppointments = getTodayAppointments();
   const pendingRequests = getPendingAppointments();
-  
+  const upcomingAppointments = getUpcomingAppointments();
+
   // Get appointments with pending reschedule requests from patients
-  const rescheduleRequests = appointments.filter(a => 
-    a.reschedule_requested_by === "user" && 
+  const rescheduleRequests = appointments.filter(a =>
+    a.reschedule_requested_by === "user" &&
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     (a as any).proposed_date
   );
@@ -132,7 +139,7 @@ const ProviderDashboard = () => {
   const approvedCount = appointments.filter(a => a.status === "approved").length;
   const completedCount = appointments.filter(a => a.status === "completed").length;
   const totalPatients = new Set(appointments.map(a => a.user_id)).size;
-  const videoAppointments = appointments.filter(a => 
+  const videoAppointments = appointments.filter(a =>
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     (a as any).is_video_consultation && a.status === "approved"
   );
@@ -155,9 +162,9 @@ const ProviderDashboard = () => {
 
   const handleConfirmReject = () => {
     if (selectedAppointment) {
-      updateStatus({ 
-        id: selectedAppointment.id, 
-        status: "rejected", 
+      updateStatus({
+        id: selectedAppointment.id,
+        status: "rejected",
         cancellation_reason: rejectReason,
         appointment: selectedAppointment
       });
@@ -186,6 +193,22 @@ const ProviderDashboard = () => {
     setContactSubject(`Regarding your appointment on ${format(parseISO(appointment.appointment_date), "MMMM d, yyyy")}`);
     setContactMessage("");
     setContactDialogOpen(true);
+  };
+
+  const handlePaymentClick = (appointment: ProviderAppointment) => {
+    setSelectedAppointment(appointment);
+    setPaymentDialogOpen(true);
+  };
+
+  const handlePaymentUpdate = (data: {
+    id: string;
+    payment_status: string;
+    payment_method: string;
+    payment_amount?: number;
+  }) => {
+    updatePayment(data);
+    setPaymentDialogOpen(false);
+    setSelectedAppointment(null);
   };
 
   const handleSendContactEmail = async () => {
@@ -344,251 +367,410 @@ const ProviderDashboard = () => {
           <>
             {/* Stats Grid */}
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
-          {stats.map((stat) => (
-            <Card key={stat.label}>
-              <CardContent className="p-6">
-                <div className="flex items-center justify-between mb-2">
-                  <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center">
-                    <stat.icon className="h-5 w-5 text-primary" />
-                  </div>
-                  <TrendingUp className="h-4 w-4 text-primary" />
-                </div>
-                <p className="text-2xl font-bold">{stat.value}</p>
-                <p className="text-sm text-muted-foreground">{stat.label}</p>
-                <p className="text-xs text-muted-foreground mt-1">{stat.trend}</p>
-              </CardContent>
-            </Card>
-          ))}
-        </div>
-
-        {/* Reschedule Requests from Patients */}
-        {rescheduleRequests.length > 0 && (
-          <div className="mb-8">
-            <h2 className="text-lg font-semibold mb-4">Reschedule Requests from Patients</h2>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              {rescheduleRequests.map((appointment) => (
-                <RescheduleRequestCard
-                  key={appointment.id}
-                  appointmentId={appointment.id}
-                  currentDate={appointment.appointment_date}
-                  currentTime={appointment.start_time}
-                  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-                  proposedDate={(appointment as any).proposed_date}
-                  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-                  proposedStartTime={(appointment as any).proposed_start_time}
-                  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-                  proposedEndTime={(appointment as any).proposed_end_time}
-                  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-                  reason={(appointment as any).reschedule_reason}
-                  requestedBy="user"
-                  patientName={appointment.user_profile?.full_name}
-                  patientAvatar={appointment.user_profile?.avatar_url}
-                  onAccept={acceptReschedule}
-                  onDecline={declineReschedule}
-                  isAccepting={isAccepting}
-                  isDeclining={isDeclining}
-                  isUserView={false}
-                />
+              {stats.map((stat) => (
+                <Card key={stat.label}>
+                  <CardContent className="p-6">
+                    <div className="flex items-center justify-between mb-2">
+                      <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center">
+                        <stat.icon className="h-5 w-5 text-primary" />
+                      </div>
+                      <TrendingUp className="h-4 w-4 text-primary" />
+                    </div>
+                    <p className="text-2xl font-bold">{stat.value}</p>
+                    <p className="text-sm text-muted-foreground">{stat.label}</p>
+                    <p className="text-xs text-muted-foreground mt-1">{stat.trend}</p>
+                  </CardContent>
+                </Card>
               ))}
             </div>
-          </div>
-        )}
 
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-          {/* Today's Schedule */}
-          <div className="lg:col-span-2">
-            <Card>
-              <CardHeader className="flex flex-row items-center justify-between">
-                <CardTitle>Today's Schedule</CardTitle>
-                <Badge variant="outline">{format(new Date(), "EEEE, MMM d")}</Badge>
-              </CardHeader>
-              <CardContent>
-                {todayAppointments.length === 0 ? (
-                  <div className="text-center py-8 text-muted-foreground">
-                    No appointments scheduled for today
-                  </div>
-                ) : (
-                  <div className="space-y-4">
-                    {todayAppointments.map((appointment) => {
+            {/* Reschedule Requests from Patients */}
+            {rescheduleRequests.length > 0 && (
+              <div className="mb-8">
+                <h2 className="text-lg font-semibold mb-4">Reschedule Requests from Patients</h2>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  {rescheduleRequests.map((appointment) => (
+                    <RescheduleRequestCard
+                      key={appointment.id}
+                      appointmentId={appointment.id}
+                      currentDate={appointment.appointment_date}
+                      currentTime={appointment.start_time}
                       // eslint-disable-next-line @typescript-eslint/no-explicit-any
-                      const isVideoAppointment = (appointment as any).is_video_consultation;
-                      
-                      return (
-                        <div
-                          key={appointment.id}
-                          className="flex items-center justify-between p-4 rounded-lg border"
-                        >
-                          <div className="flex items-center gap-4">
-                            <Avatar>
-                              <AvatarImage src={appointment.user_profile?.avatar_url || undefined} />
-                              <AvatarFallback>
-                                {appointment.user_profile?.full_name
-                                  ?.split(" ")
-                                  .map((n) => n[0])
-                                  .join("") || "U"}
-                              </AvatarFallback>
-                            </Avatar>
-                            <div>
+                      proposedDate={(appointment as any).proposed_date}
+                      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+                      proposedStartTime={(appointment as any).proposed_start_time}
+                      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+                      proposedEndTime={(appointment as any).proposed_end_time}
+                      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+                      reason={(appointment as any).reschedule_reason}
+                      requestedBy="user"
+                      patientName={appointment.user_profile?.full_name}
+                      patientAvatar={appointment.user_profile?.avatar_url}
+                      onAccept={acceptReschedule}
+                      onDecline={declineReschedule}
+                      isAccepting={isAccepting}
+                      isDeclining={isDeclining}
+                      isUserView={false}
+                    />
+                  ))}
+                </div>
+              </div>
+            )}
+
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+              {/* Today's Schedule */}
+              <div className="lg:col-span-2">
+                <Card>
+                  <CardHeader className="flex flex-row items-center justify-between">
+                    <CardTitle>Today's Schedule</CardTitle>
+                    <Badge variant="outline">{format(new Date(), "EEEE, MMM d")}</Badge>
+                  </CardHeader>
+                  <CardContent>
+                    {todayAppointments.length === 0 ? (
+                      <div className="text-center py-8 text-muted-foreground">
+                        No appointments scheduled for today
+                      </div>
+                    ) : (
+                      <div className="space-y-4">
+                        {todayAppointments.map((appointment) => {
+                          // eslint-disable-next-line @typescript-eslint/no-explicit-any
+                          const isVideoAppointment = (appointment as any).is_video_consultation;
+
+                          return (
+                            <div
+                              key={appointment.id}
+                              className="flex items-center justify-between p-4 rounded-lg border"
+                            >
+                              <div className="flex items-center gap-4">
+                                <Avatar>
+                                  <AvatarImage src={appointment.user_profile?.avatar_url || undefined} />
+                                  <AvatarFallback>
+                                    {appointment.user_profile?.full_name
+                                      ?.split(" ")
+                                      .map((n) => n[0])
+                                      .join("") || "U"}
+                                  </AvatarFallback>
+                                </Avatar>
+                                <div>
+                                  <div className="flex items-center gap-2">
+                                    <p className="font-medium">
+                                      {appointment.user_profile?.full_name || "Patient"}
+                                    </p>
+                                    {getStatusBadge(appointment.status)}
+                                    {isVideoAppointment && (
+                                      <Badge variant="outline" className="text-xs">
+                                        <Video className="h-3 w-3 mr-1" />
+                                        Video
+                                      </Badge>
+                                    )}
+                                    {/* Payment Status Badge */}
+                                    {!isVideoAppointment && appointment.status === "approved" && (
+                                      <Badge
+                                        variant={appointment.payment_status === "paid" ? "default" : "destructive"}
+                                        className={`text-xs ${appointment.payment_status === "paid" ? "bg-green-600" : ""}`}
+                                      >
+                                        {appointment.payment_status === "paid" ? "✅ Paid" : "❌ Unpaid"}
+                                      </Badge>
+                                    )}
+                                    {appointment.payment_status === "paid" && appointment.payment_method && (
+                                      <Badge variant="outline" className="text-xs capitalize">
+                                        {appointment.payment_method}
+                                      </Badge>
+                                    )}
+                                  </div>
+                                  <div className="flex items-center gap-3 text-sm text-muted-foreground">
+                                    <span className="flex items-center gap-1">
+                                      <Clock className="h-3 w-3" />
+                                      {formatTime(appointment.start_time)} - {formatTime(appointment.end_time)}
+                                    </span>
+                                  </div>
+                                  {appointment.notes && (
+                                    <p className="text-xs text-muted-foreground mt-1 italic">
+                                      {appointment.notes}
+                                    </p>
+                                  )}
+                                </div>
+                              </div>
                               <div className="flex items-center gap-2">
-                                <p className="font-medium">
-                                  {appointment.user_profile?.full_name || "Patient"}
-                                </p>
-                                {getStatusBadge(appointment.status)}
-                                {isVideoAppointment && (
-                                  <Badge variant="outline" className="text-xs">
-                                    <Video className="h-3 w-3 mr-1" />
-                                    Video
-                                  </Badge>
+                                {isVideoAppointment && appointment.status === "approved" && (
+                                  <Button
+                                    size="sm"
+                                    onClick={() => handleVideoClick(appointment)}
+                                  >
+                                    <Video className="h-4 w-4 mr-1" />
+                                    Start
+                                  </Button>
                                 )}
+                                <DropdownMenu>
+                                  <DropdownMenuTrigger asChild>
+                                    <Button variant="ghost" size="icon">
+                                      <MoreHorizontal className="h-4 w-4" />
+                                    </Button>
+                                  </DropdownMenuTrigger>
+                                  <DropdownMenuContent align="end">
+                                    <DropdownMenuItem onClick={() => handleComplete(appointment)}>
+                                      Mark as Completed
+                                    </DropdownMenuItem>
+                                    {/* Update Payment - only for physical visits */}
+                                    {!isVideoAppointment && (
+                                      <DropdownMenuItem onClick={() => handlePaymentClick(appointment)}>
+                                        <IndianRupee className="h-4 w-4 mr-2" />
+                                        Update Payment
+                                      </DropdownMenuItem>
+                                    )}
+                                    <DropdownMenuItem onClick={() => handleRescheduleClick(appointment)}>
+                                      <CalendarClock className="h-4 w-4 mr-2" />
+                                      Suggest New Time
+                                    </DropdownMenuItem>
+                                    <DropdownMenuItem onClick={() => handleContactClick(appointment)}>
+                                      <Mail className="h-4 w-4 mr-2" />
+                                      Contact Patient
+                                    </DropdownMenuItem>
+                                    <DropdownMenuItem
+                                      className="text-destructive"
+                                      onClick={() => handleRejectClick(appointment)}
+                                    >
+                                      Cancel Appointment
+                                    </DropdownMenuItem>
+                                  </DropdownMenuContent>
+                                </DropdownMenu>
                               </div>
-                              <div className="flex items-center gap-3 text-sm text-muted-foreground">
-                                <span className="flex items-center gap-1">
-                                  <Clock className="h-3 w-3" />
-                                  {formatTime(appointment.start_time)} - {formatTime(appointment.end_time)}
-                                </span>
-                              </div>
-                              {appointment.notes && (
-                                <p className="text-xs text-muted-foreground mt-1 italic">
-                                  {appointment.notes}
-                                </p>
-                              )}
                             </div>
+                          );
+                        })}
+                      </div>
+                    )}
+                  </CardContent>
+                </Card>
+
+                {/* Upcoming Appointments */}
+                <Card className="mt-6">
+                  <CardHeader className="flex flex-row items-center justify-between">
+                    <CardTitle className="flex items-center gap-2">
+                      <CalendarClock className="h-5 w-5 text-primary" />
+                      Upcoming Appointments
+                    </CardTitle>
+                    <Badge variant="secondary">{upcomingAppointments.length}</Badge>
+                  </CardHeader>
+                  <CardContent>
+                    {upcomingAppointments.length === 0 ? (
+                      <div className="text-center py-8 text-muted-foreground">
+                        No upcoming appointments
+                      </div>
+                    ) : (
+                      <div className="space-y-4">
+                        {upcomingAppointments.slice(0, 10).map((appointment) => {
+                          // eslint-disable-next-line @typescript-eslint/no-explicit-any
+                          const isVideoAppointment = (appointment as any).is_video_consultation;
+                          const appointmentDate = parseISO(appointment.appointment_date);
+                          const isToday = format(appointmentDate, "yyyy-MM-dd") === format(new Date(), "yyyy-MM-dd");
+
+                          return (
+                            <div
+                              key={appointment.id}
+                              className="flex items-center justify-between p-4 rounded-lg border"
+                            >
+                              <div className="flex items-center gap-4">
+                                <Avatar>
+                                  <AvatarImage src={appointment.user_profile?.avatar_url || undefined} />
+                                  <AvatarFallback>
+                                    {appointment.user_profile?.full_name
+                                      ?.split(" ")
+                                      .map((n) => n[0])
+                                      .join("") || "U"}
+                                  </AvatarFallback>
+                                </Avatar>
+                                <div>
+                                  <div className="flex items-center gap-2">
+                                    <p className="font-medium">
+                                      {appointment.user_profile?.full_name || "Patient"}
+                                    </p>
+                                    {getStatusBadge(appointment.status)}
+                                    {isVideoAppointment && (
+                                      <Badge variant="outline" className="text-xs">
+                                        <Video className="h-3 w-3 mr-1" />
+                                        Video
+                                      </Badge>
+                                    )}
+                                    {isToday && (
+                                      <Badge className="bg-green-500/10 text-green-600 border-green-200">
+                                        Today
+                                      </Badge>
+                                    )}
+                                    {/* Payment Status Badge */}
+                                    {!isVideoAppointment && (
+                                      <Badge
+                                        variant={appointment.payment_status === "paid" ? "default" : "destructive"}
+                                        className={`text-xs ${appointment.payment_status === "paid" ? "bg-green-600" : ""}`}
+                                      >
+                                        {appointment.payment_status === "paid" ? "✅ Paid" : "❌ Unpaid"}
+                                      </Badge>
+                                    )}
+                                    {appointment.payment_status === "paid" && appointment.payment_method && (
+                                      <Badge variant="outline" className="text-xs capitalize">
+                                        {appointment.payment_method}
+                                      </Badge>
+                                    )}
+                                  </div>
+                                  <div className="flex items-center gap-3 text-sm text-muted-foreground">
+                                    <span className="flex items-center gap-1">
+                                      <Calendar className="h-3 w-3" />
+                                      {format(appointmentDate, "MMM d, yyyy")}
+                                    </span>
+                                    <span className="flex items-center gap-1">
+                                      <Clock className="h-3 w-3" />
+                                      {formatTime(appointment.start_time)} - {formatTime(appointment.end_time)}
+                                    </span>
+                                  </div>
+                                  {appointment.notes && (
+                                    <p className="text-xs text-muted-foreground mt-1 italic line-clamp-1">
+                                      {appointment.notes}
+                                    </p>
+                                  )}
+                                </div>
+                              </div>
+                              <div className="flex items-center gap-2">
+                                {isVideoAppointment && appointment.status === "approved" && (
+                                  <Button
+                                    size="sm"
+                                    onClick={() => handleVideoClick(appointment)}
+                                  >
+                                    <Video className="h-4 w-4 mr-1" />
+                                    Start
+                                  </Button>
+                                )}
+                                <DropdownMenu>
+                                  <DropdownMenuTrigger asChild>
+                                    <Button variant="ghost" size="icon">
+                                      <MoreHorizontal className="h-4 w-4" />
+                                    </Button>
+                                  </DropdownMenuTrigger>
+                                  <DropdownMenuContent align="end">
+                                    <DropdownMenuItem onClick={() => handleComplete(appointment)}>
+                                      Mark as Completed
+                                    </DropdownMenuItem>
+                                    {/* Update Payment - only for physical visits */}
+                                    {!isVideoAppointment && (
+                                      <DropdownMenuItem onClick={() => handlePaymentClick(appointment)}>
+                                        <IndianRupee className="h-4 w-4 mr-2" />
+                                        Update Payment
+                                      </DropdownMenuItem>
+                                    )}
+                                    <DropdownMenuItem onClick={() => handleRescheduleClick(appointment)}>
+                                      <CalendarClock className="h-4 w-4 mr-2" />
+                                      Suggest New Time
+                                    </DropdownMenuItem>
+                                    <DropdownMenuItem onClick={() => handleContactClick(appointment)}>
+                                      <Mail className="h-4 w-4 mr-2" />
+                                      Contact Patient
+                                    </DropdownMenuItem>
+                                    <DropdownMenuItem
+                                      className="text-destructive"
+                                      onClick={() => handleRejectClick(appointment)}
+                                    >
+                                      Cancel Appointment
+                                    </DropdownMenuItem>
+                                  </DropdownMenuContent>
+                                </DropdownMenu>
+                              </div>
+                            </div>
+                          );
+                        })}
+                      </div>
+                    )}
+                  </CardContent>
+                </Card>
+              </div>
+
+              {/* Sidebar */}
+              <div className="space-y-6">
+                {/* Pending Requests */}
+                <Card>
+                  <CardHeader>
+                    <CardTitle className="flex items-center justify-between">
+                      <span>Pending Requests</span>
+                      <Badge variant="secondary">{pendingRequests.length}</Badge>
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent className="space-y-4">
+                    {pendingRequests.length === 0 ? (
+                      <p className="text-sm text-muted-foreground text-center py-4">
+                        No pending requests
+                      </p>
+                    ) : (
+                      pendingRequests.slice(0, 5).map((request) => (
+                        <div key={request.id} className="space-y-3 pb-4 border-b last:border-0">
+                          <div className="flex items-center justify-between">
+                            <div className="flex items-center gap-2">
+                              <Avatar className="h-8 w-8">
+                                <AvatarImage src={request.user_profile?.avatar_url || undefined} />
+                                <AvatarFallback className="text-xs">
+                                  {request.user_profile?.full_name
+                                    ?.split(" ")
+                                    .map((n) => n[0])
+                                    .join("") || "U"}
+                                </AvatarFallback>
+                              </Avatar>
+                              <span className="font-medium text-sm">
+                                {request.user_profile?.full_name || "Patient"}
+                              </span>
+                            </div>
+                            <Badge variant="outline" className="text-xs">New</Badge>
                           </div>
-                          <div className="flex items-center gap-2">
-                            {isVideoAppointment && appointment.status === "approved" && (
-                              <Button 
-                                size="sm" 
-                                onClick={() => handleVideoClick(appointment)}
-                              >
-                                <Video className="h-4 w-4 mr-1" />
-                                Start
-                              </Button>
-                            )}
-                            <DropdownMenu>
-                              <DropdownMenuTrigger asChild>
-                                <Button variant="ghost" size="icon">
-                                  <MoreHorizontal className="h-4 w-4" />
-                                </Button>
-                              </DropdownMenuTrigger>
-                              <DropdownMenuContent align="end">
-                                <DropdownMenuItem onClick={() => handleComplete(appointment)}>
-                                  Mark as Completed
-                                </DropdownMenuItem>
-                                <DropdownMenuItem onClick={() => handleRescheduleClick(appointment)}>
-                                  <CalendarClock className="h-4 w-4 mr-2" />
-                                  Suggest New Time
-                                </DropdownMenuItem>
-                                <DropdownMenuItem onClick={() => handleContactClick(appointment)}>
-                                  <Mail className="h-4 w-4 mr-2" />
-                                  Contact Patient
-                                </DropdownMenuItem>
-                                <DropdownMenuItem 
-                                  className="text-destructive"
-                                  onClick={() => handleRejectClick(appointment)}
-                                >
-                                  Cancel Appointment
-                                </DropdownMenuItem>
-                              </DropdownMenuContent>
-                            </DropdownMenu>
+                          <div className="text-xs text-muted-foreground">
+                            {format(parseISO(request.appointment_date), "MMM d, yyyy")} at {formatTime(request.start_time)}
+                          </div>
+                          {request.notes && (
+                            <p className="text-xs text-muted-foreground line-clamp-2 italic">
+                              {request.notes}
+                            </p>
+                          )}
+                          <div className="flex gap-2">
+                            <Button
+                              size="sm"
+                              className="flex-1 h-8"
+                              onClick={() => handleApprove(request)}
+                              disabled={isUpdating}
+                            >
+                              <CheckCircle2 className="h-3 w-3 mr-1" />
+                              Accept
+                            </Button>
+                            <Button
+                              size="sm"
+                              variant="outline"
+                              className="flex-1 h-8"
+                              onClick={() => handleRejectClick(request)}
+                              disabled={isUpdating}
+                            >
+                              <XCircle className="h-3 w-3 mr-1" />
+                              Decline
+                            </Button>
                           </div>
                         </div>
-                      );
-                    })}
-                  </div>
-                )}
-              </CardContent>
-            </Card>
-          </div>
+                      ))
+                    )}
+                  </CardContent>
+                </Card>
 
-          {/* Sidebar */}
-          <div className="space-y-6">
-            {/* Pending Requests */}
-            <Card>
-              <CardHeader>
-                <CardTitle className="flex items-center justify-between">
-                  <span>Pending Requests</span>
-                  <Badge variant="secondary">{pendingRequests.length}</Badge>
-                </CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                {pendingRequests.length === 0 ? (
-                  <p className="text-sm text-muted-foreground text-center py-4">
-                    No pending requests
-                  </p>
-                ) : (
-                  pendingRequests.slice(0, 5).map((request) => (
-                    <div key={request.id} className="space-y-3 pb-4 border-b last:border-0">
-                      <div className="flex items-center justify-between">
-                        <div className="flex items-center gap-2">
-                          <Avatar className="h-8 w-8">
-                            <AvatarImage src={request.user_profile?.avatar_url || undefined} />
-                            <AvatarFallback className="text-xs">
-                              {request.user_profile?.full_name
-                                ?.split(" ")
-                                .map((n) => n[0])
-                                .join("") || "U"}
-                            </AvatarFallback>
-                          </Avatar>
-                          <span className="font-medium text-sm">
-                            {request.user_profile?.full_name || "Patient"}
-                          </span>
-                        </div>
-                        <Badge variant="outline" className="text-xs">New</Badge>
-                      </div>
-                      <div className="text-xs text-muted-foreground">
-                        {format(parseISO(request.appointment_date), "MMM d, yyyy")} at {formatTime(request.start_time)}
-                      </div>
-                      {request.notes && (
-                        <p className="text-xs text-muted-foreground line-clamp-2 italic">
-                          {request.notes}
-                        </p>
-                      )}
-                      <div className="flex gap-2">
-                        <Button 
-                          size="sm" 
-                          className="flex-1 h-8"
-                          onClick={() => handleApprove(request)}
-                          disabled={isUpdating}
-                        >
-                          <CheckCircle2 className="h-3 w-3 mr-1" />
-                          Accept
-                        </Button>
-                        <Button 
-                          size="sm" 
-                          variant="outline" 
-                          className="flex-1 h-8"
-                          onClick={() => handleRejectClick(request)}
-                          disabled={isUpdating}
-                        >
-                          <XCircle className="h-3 w-3 mr-1" />
-                          Decline
-                        </Button>
-                      </div>
-                    </div>
-                  ))
-                )}
-              </CardContent>
-            </Card>
-
-            {/* Calendar Sync */}
-            <CalendarSyncCard
-              appointments={appointments.map(a => ({
-                id: a.id,
-                appointment_date: a.appointment_date,
-                start_time: a.start_time,
-                end_time: a.end_time,
-                patient_name: a.user_profile?.full_name,
-                // eslint-disable-next-line @typescript-eslint/no-explicit-any
-                is_video_consultation: (a as any).is_video_consultation || false,
-                // eslint-disable-next-line @typescript-eslint/no-explicit-any
-                meeting_url: (a as any).meeting_url,
-                notes: a.notes || undefined,
-                status: a.status,
-              }))}
-              isProvider={true}
-            />
-          </div>
-        </div>
+                {/* Calendar Sync */}
+                <CalendarSyncCard
+                  appointments={appointments.map(a => ({
+                    id: a.id,
+                    appointment_date: a.appointment_date,
+                    start_time: a.start_time,
+                    end_time: a.end_time,
+                    patient_name: a.user_profile?.full_name,
+                    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+                    is_video_consultation: (a as any).is_video_consultation || false,
+                    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+                    meeting_url: (a as any).meeting_url,
+                    notes: a.notes || undefined,
+                    status: a.status,
+                  }))}
+                  isProvider={true}
+                />
+              </div>
+            </div>
           </>
         )}
       </div>
@@ -613,8 +795,8 @@ const ProviderDashboard = () => {
             <Button variant="outline" onClick={() => setRejectDialogOpen(false)}>
               Cancel
             </Button>
-            <Button 
-              variant="destructive" 
+            <Button
+              variant="destructive"
               onClick={handleConfirmReject}
               disabled={isUpdating}
             >
@@ -696,7 +878,7 @@ const ProviderDashboard = () => {
             <Button variant="outline" onClick={() => setContactDialogOpen(false)}>
               Cancel
             </Button>
-            <Button 
+            <Button
               onClick={handleSendContactEmail}
               disabled={isSendingEmail || !contactSubject || !contactMessage}
             >
@@ -715,6 +897,21 @@ const ProviderDashboard = () => {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      {/* Payment Update Dialog */}
+      {selectedAppointment && (
+        <PaymentUpdateDialog
+          open={paymentDialogOpen}
+          onOpenChange={setPaymentDialogOpen}
+          appointmentId={selectedAppointment.id}
+          patientName={selectedAppointment.user_profile?.full_name || "Patient"}
+          currentPaymentStatus={selectedAppointment.payment_status || undefined}
+          currentPaymentMethod={selectedAppointment.payment_method || undefined}
+          currentPaymentAmount={selectedAppointment.payment_amount || undefined}
+          onUpdate={handlePaymentUpdate}
+          isUpdating={isUpdatingPayment}
+        />
+      )}
     </Layout>
   );
 };

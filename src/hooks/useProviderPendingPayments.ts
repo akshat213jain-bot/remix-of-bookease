@@ -12,6 +12,7 @@ interface PendingPayment {
     payment_status: string;
     appointment_status: string;
     user_id: string;
+    is_video_consultation: boolean;
     consumer_name: string;
     consumer_email: string;
     created_at: string;

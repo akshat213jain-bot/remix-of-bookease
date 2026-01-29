@@ -2,19 +2,23 @@ import { useState, useEffect, useRef } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { 
-  Video, 
-  VideoOff, 
-  Mic, 
-  MicOff, 
-  Phone, 
-  Loader2, 
+import {
+  Video,
+  VideoOff,
+  Mic,
+  MicOff,
+  Phone,
+  Loader2,
   ExternalLink,
-  AlertCircle
+  AlertCircle,
+  UserCheck,
+  Bell,
+  CreditCard
 } from "lucide-react";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
+import { WaitingRoom } from "./WaitingRoom";
 
 interface VideoConsultationProps {
   appointmentId: string;
@@ -25,6 +29,8 @@ interface VideoConsultationProps {
   isProvider?: boolean;
   onClose?: () => void;
 }
+
+type VideoStatus = "not_started" | "provider_ready" | "patient_waiting" | "admitted" | "in_call" | "ended";
 
 export const VideoConsultation = ({
   appointmentId,
@@ -39,19 +45,115 @@ export const VideoConsultation = ({
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [isInCall, setIsInCall] = useState(false);
+  const [isWaiting, setIsWaiting] = useState(false);
+  const [patientWaiting, setPatientWaiting] = useState(false);
+  const [isAdmitting, setIsAdmitting] = useState(false);
+  const [paymentStatus, setPaymentStatus] = useState<string | null>(null);
+  const [isProcessingPayment, setIsProcessingPayment] = useState(false);
+  const [isCheckingPayment, setIsCheckingPayment] = useState(true);
   const iframeRef = useRef<HTMLIFrameElement>(null);
   const { toast } = useToast();
+
+  // Check payment status on mount for non-providers
+  useEffect(() => {
+    const checkPaymentStatus = async () => {
+      if (isProvider) {
+        setIsCheckingPayment(false);
+        return;
+      }
+
+      try {
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        const { data, error } = await (supabase as any)
+          .from("appointments")
+          .select("payment_status, payment_amount")
+          .eq("id", appointmentId)
+          .single();
+
+        if (error) throw error;
+        setPaymentStatus(data?.payment_status || "unpaid");
+      } catch (err) {
+        console.error("Failed to check payment status:", err);
+        setPaymentStatus("unpaid");
+      } finally {
+        setIsCheckingPayment(false);
+      }
+    };
+
+    checkPaymentStatus();
+  }, [appointmentId, isProvider]);
+
+  // Subscribe to realtime updates for video status
+  useEffect(() => {
+    const channel = supabase
+      .channel(`appointment-${appointmentId}`)
+      .on(
+        "postgres_changes",
+        {
+          event: "UPDATE",
+          schema: "public",
+          table: "appointments",
+          filter: `id=eq.${appointmentId}`,
+        },
+        (payload) => {
+          const newStatus = payload.new.video_status as VideoStatus;
+          console.log("Video status changed:", newStatus);
+
+          if (!isProvider && newStatus === "admitted") {
+            // Patient was admitted - get room URL and join
+            setIsWaiting(false);
+            toast({
+              title: "You're in!",
+              description: "The provider has admitted you. Joining the call...",
+            });
+            // Fetch the room URL
+            fetchRoomAfterAdmission();
+          }
+
+          if (isProvider && newStatus === "patient_waiting") {
+            // Patient started waiting
+            setPatientWaiting(true);
+            toast({
+              title: "Patient is waiting",
+              description: "Your patient is ready to join the video call.",
+            });
+          }
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [appointmentId, isProvider]);
+
+  const fetchRoomAfterAdmission = async () => {
+    try {
+      const { data, error } = await supabase.functions.invoke("create-video-room", {
+        body: { appointment_id: appointmentId },
+      });
+
+      if (error) throw error;
+
+      if (data.room_url) {
+        setRoomUrl(data.room_url);
+      }
+    } catch (err) {
+      console.error("Failed to fetch room after admission:", err);
+      setError("Failed to join the call. Please try again.");
+    }
+  };
 
   // Check if appointment time allows joining
   const canJoin = () => {
     const now = new Date();
     const appointmentStart = new Date(`${appointmentDate}T${startTime}`);
     const appointmentEnd = new Date(`${appointmentDate}T${endTime}`);
-    
+
     // Allow joining 10 minutes before start until 30 minutes after end
     const earlyJoinWindow = new Date(appointmentStart.getTime() - 10 * 60 * 1000);
     const lateJoinWindow = new Date(appointmentEnd.getTime() + 30 * 60 * 1000);
-    
+
     return now >= earlyJoinWindow && now <= lateJoinWindow;
   };
 
@@ -59,12 +161,12 @@ export const VideoConsultation = ({
     const now = new Date();
     const appointmentStart = new Date(`${appointmentDate}T${startTime}`);
     const diff = appointmentStart.getTime() - now.getTime();
-    
+
     if (diff <= 0) return null;
-    
+
     const hours = Math.floor(diff / (1000 * 60 * 60));
     const minutes = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
-    
+
     if (hours > 0) {
       return `${hours}h ${minutes}m`;
     }
@@ -82,11 +184,25 @@ export const VideoConsultation = ({
 
       if (error) throw error;
 
-      if (data.room_url) {
+      // Handle different response statuses
+      if (data.status === "waiting") {
+        // Patient needs to wait
+        setIsWaiting(true);
+        toast({
+          title: "Waiting for provider",
+          description: data.message || "Please wait for the provider to let you in.",
+        });
+      } else if (data.room_url) {
         setRoomUrl(data.room_url);
+
+        // Check if patient is waiting (for provider)
+        if (isProvider && data.patient_waiting) {
+          setPatientWaiting(true);
+        }
+
         console.log("Video room ready:", data.room_url);
       } else {
-        throw new Error("No room URL returned");
+        throw new Error("Unexpected response from server");
       }
     } catch (err) {
       console.error("Failed to create video room:", err);
@@ -101,6 +217,32 @@ export const VideoConsultation = ({
     }
   };
 
+  const admitPatient = async () => {
+    setIsAdmitting(true);
+    try {
+      const { data, error } = await supabase.functions.invoke("admit-patient", {
+        body: { appointment_id: appointmentId },
+      });
+
+      if (error) throw error;
+
+      setPatientWaiting(false);
+      toast({
+        title: "Patient admitted",
+        description: "The patient can now join the video call.",
+      });
+    } catch (err) {
+      console.error("Failed to admit patient:", err);
+      toast({
+        title: "Error",
+        description: "Failed to admit patient. Please try again.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsAdmitting(false);
+    }
+  };
+
   const joinCall = () => {
     if (roomUrl) {
       setIsInCall(true);
@@ -109,6 +251,7 @@ export const VideoConsultation = ({
 
   const leaveCall = () => {
     setIsInCall(false);
+    setIsWaiting(false);
     if (onClose) {
       onClose();
     }
@@ -120,9 +263,124 @@ export const VideoConsultation = ({
     }
   };
 
+  const handlePayment = async () => {
+    setIsProcessingPayment(true);
+    try {
+      const { data, error } = await supabase.functions.invoke("create-appointment-payment", {
+        body: {
+          appointment_id: appointmentId,
+          success_url: `${window.location.origin}/dashboard?payment=success&appointment=${appointmentId}`,
+          cancel_url: `${window.location.origin}/dashboard?payment=cancelled`,
+        },
+      });
+
+      if (error) throw error;
+
+      if (data.url) {
+        // Redirect to Stripe checkout
+        window.location.href = data.url;
+      } else {
+        throw new Error("No checkout URL received");
+      }
+    } catch (err) {
+      console.error("Payment initiation failed:", err);
+      toast({
+        title: "Payment Error",
+        description: "Failed to start payment process. Please try again.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsProcessingPayment(false);
+    }
+  };
+
   const timeUntilStart = getTimeUntilStart();
   const joinEnabled = canJoin();
+  const isPaid = paymentStatus === "paid";
 
+  // Show loading while checking payment
+  if (isCheckingPayment && !isProvider) {
+    return (
+      <Card>
+        <CardContent className="p-8 text-center">
+          <Loader2 className="h-8 w-8 animate-spin mx-auto text-primary" />
+          <p className="text-muted-foreground mt-4">Checking payment status...</p>
+        </CardContent>
+      </Card>
+    );
+  }
+
+  // Show payment required screen for unpaid virtual consultations
+  if (!isProvider && !isPaid) {
+    return (
+      <Card>
+        <CardHeader>
+          <div className="flex items-center justify-between">
+            <div>
+              <CardTitle className="flex items-center gap-2">
+                <CreditCard className="h-5 w-5 text-primary" />
+                Payment Required
+              </CardTitle>
+              <CardDescription>
+                Please complete payment to join your video consultation
+              </CardDescription>
+            </div>
+            <Badge variant="destructive">Unpaid</Badge>
+          </div>
+        </CardHeader>
+        <CardContent className="space-y-6">
+          <div className="text-center py-6">
+            <div className="w-20 h-20 mx-auto mb-4 rounded-full bg-amber-500/10 flex items-center justify-center">
+              <CreditCard className="h-10 w-10 text-amber-600" />
+            </div>
+            <h3 className="text-lg font-semibold mb-2">Payment is required to join</h3>
+            <p className="text-muted-foreground mb-2">
+              Your video consultation with <strong>{providerName || "your provider"}</strong>
+            </p>
+            <p className="text-sm text-muted-foreground mb-6">
+              {startTime} - {endTime}
+            </p>
+            <Button
+              onClick={handlePayment}
+              disabled={isProcessingPayment}
+              size="lg"
+              className="bg-gradient-to-r from-green-600 to-emerald-600 hover:from-green-700 hover:to-emerald-700"
+            >
+              {isProcessingPayment ? (
+                <>
+                  <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                  Processing...
+                </>
+              ) : (
+                <>
+                  <CreditCard className="h-4 w-4 mr-2" />
+                  Pay Now & Join
+                </>
+              )}
+            </Button>
+          </div>
+
+          <div className="border-t pt-4">
+            <p className="text-xs text-muted-foreground text-center">
+              🔒 Secure payment powered by Stripe
+            </p>
+          </div>
+        </CardContent>
+      </Card>
+    );
+  }
+
+  // If patient is waiting, show waiting room
+  if (isWaiting && !isProvider) {
+    return (
+      <WaitingRoom
+        providerName={providerName || "Your provider"}
+        onLeave={leaveCall}
+      />
+    );
+  }
+
+  // If in call, show full-screen video
   if (isInCall && roomUrl) {
     return (
       <div className="fixed inset-0 z-50 bg-background">
@@ -184,13 +442,45 @@ export const VideoConsultation = ({
           </Alert>
         )}
 
+        {/* Provider: Patient waiting notification */}
+        {isProvider && patientWaiting && (
+          <Alert className="border-green-200 bg-green-50 dark:bg-green-950/20">
+            <Bell className="h-4 w-4 text-green-600" />
+            <AlertDescription className="flex items-center justify-between">
+              <span className="text-green-700 dark:text-green-400">
+                Your patient is waiting to join the call
+              </span>
+              <Button
+                size="sm"
+                onClick={admitPatient}
+                disabled={isAdmitting}
+                className="ml-4"
+              >
+                {isAdmitting ? (
+                  <>
+                    <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                    Admitting...
+                  </>
+                ) : (
+                  <>
+                    <UserCheck className="h-4 w-4 mr-2" />
+                    Admit Patient
+                  </>
+                )}
+              </Button>
+            </AlertDescription>
+          </Alert>
+        )}
+
         {!roomUrl ? (
           <div className="text-center py-6">
             <div className="w-20 h-20 mx-auto mb-4 rounded-full bg-primary/10 flex items-center justify-center">
               <Video className="h-10 w-10 text-primary" />
             </div>
             <p className="text-muted-foreground mb-4">
-              Click the button below to start or join your video consultation.
+              {isProvider
+                ? "Click the button below to start your video consultation."
+                : "Click the button below to join the waiting room."}
             </p>
             <Button
               onClick={createRoom}
@@ -200,12 +490,12 @@ export const VideoConsultation = ({
               {isLoading ? (
                 <>
                   <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                  Preparing Room...
+                  {isProvider ? "Starting..." : "Joining..."}
                 </>
               ) : (
                 <>
                   <Video className="h-4 w-4 mr-2" />
-                  {isProvider ? "Start Consultation" : "Join Consultation"}
+                  {isProvider ? "Start Consultation" : "Join Waiting Room"}
                 </>
               )}
             </Button>

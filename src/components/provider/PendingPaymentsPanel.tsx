@@ -28,6 +28,7 @@ import {
     Calendar,
     User,
     RefreshCw,
+    Video,
 } from "lucide-react";
 import { useProviderPendingPayments } from "@/hooks/useProviderPendingPayments";
 import { format, parseISO } from "date-fns";
@@ -193,9 +194,17 @@ export const PendingPaymentsPanel = () => {
                                             <div className="flex items-center gap-2">
                                                 <Calendar className="h-4 w-4 text-muted-foreground" />
                                                 <div>
-                                                    <p className="text-sm">
-                                                        {format(parseISO(payment.appointment_date), "MMM d, yyyy")}
-                                                    </p>
+                                                    <div className="flex items-center gap-2">
+                                                        <p className="text-sm">
+                                                            {format(parseISO(payment.appointment_date), "MMM d, yyyy")}
+                                                        </p>
+                                                        {payment.is_video_consultation && (
+                                                            <Badge variant="outline" className="text-xs">
+                                                                <Video className="h-3 w-3 mr-1" />
+                                                                Video
+                                                            </Badge>
+                                                        )}
+                                                    </div>
                                                     <p className="text-xs text-muted-foreground">
                                                         {formatTime(payment.start_time)} - {formatTime(payment.end_time)}
                                                     </p>

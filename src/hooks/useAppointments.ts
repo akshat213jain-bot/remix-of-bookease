@@ -36,6 +36,7 @@ export interface ProviderInfo {
   profession: string;
   specialty: string | null;
   consultation_fee: number | null;
+  video_consultation_fee: number | null;
   location: string | null;
   user_id: string;
 }
@@ -116,6 +117,7 @@ export const useAppointments = () => {
             profession,
             specialty,
             consultation_fee,
+            video_consultation_fee,
             location,
             user_id
           )
@@ -134,7 +136,7 @@ export const useAppointments = () => {
             providerUserIds.push(a.provider.user_id);
           }
         });
-        
+
         if (providerUserIds.length > 0) {
           const { data: profiles } = await supabase
             .from("profiles")
@@ -229,7 +231,7 @@ export const useAppointments = () => {
       const isRecurring = variables.recurrence_pattern && variables.recurrence_pattern !== "none";
       toast({
         title: isRecurring ? "Recurring appointments booked!" : "Appointment booked!",
-        description: isRecurring 
+        description: isRecurring
           ? "Your recurring appointment series has been submitted. You'll be notified once confirmed."
           : "Your appointment request has been submitted. You'll be notified once it's confirmed.",
       });
@@ -401,7 +403,7 @@ const generateRecurringDates = (
   const dates: string[] = [];
   const start = new Date(startDate);
   const end = new Date(endDate);
-  
+
   let intervalDays: number;
   switch (pattern) {
     case "weekly":
@@ -418,7 +420,7 @@ const generateRecurringDates = (
   }
 
   let current = new Date(start);
-  
+
   if (pattern === "monthly") {
     // For monthly, add one month at a time
     current.setMonth(current.getMonth() + 1);
@@ -486,10 +488,10 @@ export const useAvailableSlots = (providerId: string | undefined, date: Date | u
       // Generate time slots
       const slots: { start: string; end: string; available: boolean }[] = [];
       const slotDuration = availability.slot_duration;
-      
+
       const startParts = availability.start_time.split(":");
       const endParts = availability.end_time.split(":");
-      
+
       let currentMinutes = parseInt(startParts[0]) * 60 + parseInt(startParts[1]);
       const endMinutes = parseInt(endParts[0]) * 60 + parseInt(endParts[1]);
 

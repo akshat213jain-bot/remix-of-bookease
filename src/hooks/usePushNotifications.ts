@@ -1,158 +1,174 @@
 import { useState, useEffect, useCallback } from "react";
 import { supabase } from "@/integrations/supabase/client";
-import { useAuth } from "@/contexts/AuthContext";
 import { useToast } from "@/hooks/use-toast";
 
+interface PushNotificationState {
+  isSupported: boolean;
+  isSubscribed: boolean;
+  isLoading: boolean;
+  permission: NotificationPermission | null;
+}
+
+/**
+ * Hook for managing push notifications
+ */
 export const usePushNotifications = () => {
-  const { user } = useAuth();
+  const [state, setState] = useState<PushNotificationState>({
+    isSupported: false,
+    isSubscribed: false,
+    isLoading: true,
+    permission: null,
+  });
   const { toast } = useToast();
-  const [isSupported, setIsSupported] = useState(false);
-  const [isSubscribed, setIsSubscribed] = useState(false);
-  const [isLoading, setIsLoading] = useState(false);
-  const [permission, setPermission] = useState<NotificationPermission>("default");
 
+  // Check if push notifications are supported
   useEffect(() => {
-    // Check if push notifications are supported
-    const supported = "serviceWorker" in navigator && "PushManager" in window;
-    setIsSupported(supported);
+    const checkSupport = async () => {
+      const isSupported = "serviceWorker" in navigator && "PushManager" in window;
+      const permission = isSupported ? Notification.permission : null;
 
-    if (supported) {
-      setPermission(Notification.permission);
-      checkSubscription();
-    }
-  }, []);
-
-  const checkSubscription = async () => {
-    try {
-      const registration = await navigator.serviceWorker.ready;
-      const subscription = await registration.pushManager.getSubscription();
-      setIsSubscribed(!!subscription);
-    } catch (error) {
-      console.error("Error checking subscription:", error);
-    }
-  };
-
-  const registerServiceWorker = async () => {
-    try {
-      const registration = await navigator.serviceWorker.register("/sw.js", {
-        scope: "/",
-      });
-      await registration.update();
-      return registration;
-    } catch (error) {
-      console.error("Service Worker registration failed:", error);
-      throw error;
-    }
-  };
-
-  const subscribe = useCallback(async () => {
-    if (!user?.id || !isSupported) return;
-
-    setIsLoading(true);
-    try {
-      // Request permission
-      const result = await Notification.requestPermission();
-      setPermission(result);
-
-      if (result !== "granted") {
-        toast({
-          title: "Permission Denied",
-          description: "You need to allow notifications to receive alerts.",
-          variant: "destructive",
-        });
-        return;
+      let isSubscribed = false;
+      if (isSupported && permission === "granted") {
+        try {
+          const registration = await navigator.serviceWorker.ready;
+          const subscription = await registration.pushManager.getSubscription();
+          isSubscribed = !!subscription;
+        } catch (error) {
+          console.error("Error checking subscription:", error);
+        }
       }
 
-      // Register service worker
-      const registration = await registerServiceWorker();
+      setState({
+        isSupported,
+        isSubscribed,
+        isLoading: false,
+        permission,
+      });
+    };
+
+    checkSupport();
+  }, []);
+
+  // Subscribe to push notifications
+  const subscribe = useCallback(async () => {
+    if (!state.isSupported) {
+      toast({
+        title: "Not Supported",
+        description: "Push notifications are not supported in this browser.",
+        variant: "destructive",
+      });
+      return false;
+    }
+
+    setState((prev) => ({ ...prev, isLoading: true }));
+
+    try {
+      // Request permission
+      const permission = await Notification.requestPermission();
+
+      if (permission !== "granted") {
+        toast({
+          title: "Permission Denied",
+          description: "Please enable notifications in your browser settings.",
+          variant: "destructive",
+        });
+        setState((prev) => ({ ...prev, isLoading: false, permission }));
+        return false;
+      }
+
+      // Get service worker registration
+      const registration = await navigator.serviceWorker.ready;
+
+      // Get VAPID public key from environment
+      const vapidPublicKey = import.meta.env.VITE_VAPID_PUBLIC_KEY;
+
+      if (!vapidPublicKey) {
+        console.warn("VAPID public key not configured");
+        setState((prev) => ({ ...prev, isLoading: false }));
+        return false;
+      }
 
       // Subscribe to push
       const subscription = await registration.pushManager.subscribe({
         userVisibleOnly: true,
-        // Use a placeholder VAPID key - in production, generate proper keys
-        applicationServerKey: urlBase64ToUint8Array(
-          "BEl62iUYgUivxIkv69yViEuiBIa-Ib9-SkvMeAtA3LFgDzkrxZJjSgSnfckjBJuBkr3qBUYIHBQFLXYp5Nksh8U"
-        ),
+        applicationServerKey: urlBase64ToUint8Array(vapidPublicKey),
       });
 
-      // Save subscription to database
-      const subscriptionJSON = subscription.toJSON();
-      
-      const { error } = await supabase.from("push_subscriptions").upsert({
-        user_id: user.id,
-        endpoint: subscription.endpoint,
-        p256dh: subscriptionJSON.keys?.p256dh || "",
-        auth: subscriptionJSON.keys?.auth || "",
-      }, {
-        onConflict: "user_id",
+      // Send subscription to server
+      await supabase.functions.invoke("register-push-subscription", {
+        body: { subscription: subscription.toJSON() },
       });
 
-      if (error) throw error;
+      setState({
+        isSupported: true,
+        isSubscribed: true,
+        isLoading: false,
+        permission: "granted",
+      });
 
-      setIsSubscribed(true);
       toast({
         title: "Notifications Enabled",
-        description: "You'll now receive push notifications for important updates.",
+        description: "You'll receive appointment reminders and updates.",
       });
+
+      return true;
     } catch (error) {
-      console.error("Subscription error:", error);
+      console.error("Error subscribing to push:", error);
       toast({
         title: "Subscription Failed",
-        description: "Could not enable push notifications. Please try again.",
+        description: "Failed to enable notifications. Please try again.",
         variant: "destructive",
       });
-    } finally {
-      setIsLoading(false);
+      setState((prev) => ({ ...prev, isLoading: false }));
+      return false;
     }
-  }, [user?.id, isSupported, toast]);
+  }, [state.isSupported, toast]);
 
+  // Unsubscribe from push notifications
   const unsubscribe = useCallback(async () => {
-    if (!user?.id) return;
+    setState((prev) => ({ ...prev, isLoading: true }));
 
-    setIsLoading(true);
     try {
       const registration = await navigator.serviceWorker.ready;
       const subscription = await registration.pushManager.getSubscription();
 
       if (subscription) {
         await subscription.unsubscribe();
+
+        // Notify server
+        await supabase.functions.invoke("unregister-push-subscription", {
+          body: { endpoint: subscription.endpoint },
+        });
       }
 
-      // Remove from database
-      await supabase
-        .from("push_subscriptions")
-        .delete()
-        .eq("user_id", user.id);
+      setState((prev) => ({
+        ...prev,
+        isSubscribed: false,
+        isLoading: false,
+      }));
 
-      setIsSubscribed(false);
       toast({
         title: "Notifications Disabled",
-        description: "You will no longer receive push notifications.",
+        description: "You won't receive push notifications anymore.",
       });
+
+      return true;
     } catch (error) {
-      console.error("Unsubscribe error:", error);
-      toast({
-        title: "Error",
-        description: "Could not disable notifications. Please try again.",
-        variant: "destructive",
-      });
-    } finally {
-      setIsLoading(false);
+      console.error("Error unsubscribing:", error);
+      setState((prev) => ({ ...prev, isLoading: false }));
+      return false;
     }
-  }, [user?.id, toast]);
+  }, [toast]);
 
   return {
-    isSupported,
-    isSubscribed,
-    isLoading,
-    permission,
+    ...state,
     subscribe,
     unsubscribe,
   };
 };
 
-// Helper function to convert VAPID key
-function urlBase64ToUint8Array(base64String: string) {
+// Helper to convert VAPID key
+function urlBase64ToUint8Array(base64String: string): Uint8Array {
   const padding = "=".repeat((4 - (base64String.length % 4)) % 4);
   const base64 = (base64String + padding)
     .replace(/-/g, "+")
@@ -166,3 +182,5 @@ function urlBase64ToUint8Array(base64String: string) {
   }
   return outputArray;
 }
+
+export default usePushNotifications;

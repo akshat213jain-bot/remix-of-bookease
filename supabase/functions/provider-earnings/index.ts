@@ -281,6 +281,7 @@ Deno.serve(async (req) => {
             payment_status,
             status,
             user_id,
+            is_video_consultation,
             created_at
           `)
           .eq("provider_id", providerProfile.id)
@@ -302,28 +303,37 @@ Deno.serve(async (req) => {
 
         const profileMap = new Map((profiles || []).map(p => [p.user_id, p]));
 
-        // Get provider's consultation fee
+        // Get provider's consultation fees (both physical and video)
         const { data: providerData } = await supabase
           .from("provider_profiles")
-          .select("consultation_fee")
+          .select("consultation_fee, video_consultation_fee")
           .eq("id", providerProfile.id)
           .single();
 
         const consultationFee = providerData?.consultation_fee || 0;
+        const videoConsultationFee = providerData?.video_consultation_fee || consultationFee;
 
-        const pendingPayments = (appointments || []).map(a => ({
-          id: a.id,
-          appointment_date: a.appointment_date,
-          start_time: a.start_time,
-          end_time: a.end_time,
-          amount: a.payment_amount || consultationFee,
-          payment_status: a.payment_status,
-          appointment_status: a.status,
-          user_id: a.user_id,
-          consumer_name: profileMap.get(a.user_id)?.full_name || "Unknown",
-          consumer_email: profileMap.get(a.user_id)?.email || "",
-          created_at: a.created_at,
-        }));
+        const pendingPayments = (appointments || []).map(a => {
+          // Use correct fee based on appointment type
+          const fee = a.is_video_consultation
+            ? (videoConsultationFee || consultationFee)
+            : consultationFee;
+
+          return {
+            id: a.id,
+            appointment_date: a.appointment_date,
+            start_time: a.start_time,
+            end_time: a.end_time,
+            amount: a.payment_amount || fee,
+            payment_status: a.payment_status,
+            appointment_status: a.status,
+            user_id: a.user_id,
+            is_video_consultation: a.is_video_consultation || false,
+            consumer_name: profileMap.get(a.user_id)?.full_name || "Unknown",
+            consumer_email: profileMap.get(a.user_id)?.email || "",
+            created_at: a.created_at,
+          };
+        });
 
         const totalPending = pendingPayments.reduce((sum, p) => sum + (p.amount || 0), 0);
 

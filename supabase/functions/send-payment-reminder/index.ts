@@ -67,7 +67,7 @@ Deno.serve(async (req) => {
         // Get provider profile
         const { data: providerProfile, error: providerError } = await supabase
             .from("provider_profiles")
-            .select("id, user_id, full_name, consultation_fee")
+            .select("id, user_id, full_name, consultation_fee, video_consultation_fee")
             .eq("user_id", userData.user.id)
             .single();
 
@@ -89,10 +89,10 @@ Deno.serve(async (req) => {
             });
         }
 
-        // Get appointment details
+        // Get appointment details including video consultation flag
         const { data: appointment, error: appointmentError } = await supabase
             .from("appointments")
-            .select("id, appointment_date, start_time, end_time, user_id, payment_amount, payment_status, status")
+            .select("id, appointment_date, start_time, end_time, user_id, payment_amount, payment_status, status, is_video_consultation")
             .eq("id", appointment_id)
             .eq("provider_id", providerProfile.id)
             .single();
@@ -120,7 +120,11 @@ Deno.serve(async (req) => {
             });
         }
 
-        const amount = appointment.payment_amount || providerProfile.consultation_fee || 0;
+        // Calculate correct amount based on appointment type
+        const baseFee = appointment.is_video_consultation
+            ? (providerProfile.video_consultation_fee || providerProfile.consultation_fee || 0)
+            : (providerProfile.consultation_fee || 0);
+        const amount = appointment.payment_amount || baseFee;
         const formattedAmount = (amount / 100).toFixed(2);
         const appointmentDate = new Date(appointment.appointment_date).toLocaleDateString("en-IN", {
             weekday: "long",

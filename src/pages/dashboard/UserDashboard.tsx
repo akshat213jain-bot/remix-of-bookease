@@ -77,6 +77,17 @@ const formatTime = (time: string) => {
   return `${hour12}:${minutes} ${ampm}`;
 };
 
+// Helper to get correct fee based on appointment type
+const getAppointmentFee = (appointment: AppointmentWithProvider): number => {
+  if (appointment.is_video_consultation) {
+    // For video consultations, prefer video_consultation_fee, fallback to consultation_fee
+    return appointment.provider?.video_consultation_fee ||
+      appointment.provider?.consultation_fee || 0;
+  }
+  // For physical appointments, use consultation_fee
+  return appointment.provider?.consultation_fee || 0;
+};
+
 const UserDashboard = () => {
   const { user, profile, role } = useAuth();
   const {
@@ -100,6 +111,7 @@ const UserDashboard = () => {
   const [rescheduleDialogOpen, setRescheduleDialogOpen] = useState(false);
   const [videoDialogOpen, setVideoDialogOpen] = useState(false);
   const [reviewDialogOpen, setReviewDialogOpen] = useState(false);
+  const [detailsDialogOpen, setDetailsDialogOpen] = useState(false);
   const [selectedAppointment, setSelectedAppointment] = useState<AppointmentWithProvider | null>(null);
   const [cancelReason, setCancelReason] = useState("");
   const [viewMode, setViewMode] = useState<"list" | "calendar">("list");
@@ -149,6 +161,11 @@ const UserDashboard = () => {
     setRescheduleDialogOpen(true);
   };
 
+  const handleViewDetailsClick = (appointment: AppointmentWithProvider) => {
+    setSelectedAppointment(appointment);
+    setDetailsDialogOpen(true);
+  };
+
   const handleVideoClick = (appointment: AppointmentWithProvider) => {
     setSelectedAppointment(appointment);
     setVideoDialogOpen(true);
@@ -186,11 +203,11 @@ const UserDashboard = () => {
     const showInvoice = appointment.status === "completed" && appointment.payment_amount && appointment.payment_amount > 0;
 
     // Show Pay Now button for pending/approved appointments that haven't been paid
+    const appointmentFee = getAppointmentFee(appointment);
     const canPay =
       (appointment.status === "pending" || appointment.status === "approved") &&
       appointment.payment_status !== "paid" &&
-      appointment.provider?.consultation_fee &&
-      appointment.provider.consultation_fee > 0;
+      appointmentFee > 0;
 
     return (
       <Card key={appointment.id}>
@@ -268,7 +285,7 @@ const UserDashboard = () => {
               {canPay && (
                 <PaymentButton
                   appointmentId={appointment.id}
-                  amount={appointment.provider!.consultation_fee!}
+                  amount={appointmentFee}
                   providerName={appointment.provider_profile?.full_name || "Provider"}
                   appointmentDate={appointment.appointment_date}
                   startTime={appointment.start_time}
@@ -305,7 +322,7 @@ const UserDashboard = () => {
                     </Button>
                   </DropdownMenuTrigger>
                   <DropdownMenuContent align="end">
-                    <DropdownMenuItem>View Details</DropdownMenuItem>
+                    <DropdownMenuItem onClick={() => handleViewDetailsClick(appointment)}>View Details</DropdownMenuItem>
                     <DropdownMenuItem onClick={() => handleRescheduleClick(appointment)}>
                       Reschedule
                     </DropdownMenuItem>
@@ -642,6 +659,92 @@ const UserDashboard = () => {
           providerName={selectedAppointment.provider_profile?.full_name || "Provider"}
         />
       )}
+
+      {/* View Details Dialog */}
+      <Dialog open={detailsDialogOpen} onOpenChange={setDetailsDialogOpen}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle>Appointment Details</DialogTitle>
+            <DialogDescription>
+              Full details for your appointment
+            </DialogDescription>
+          </DialogHeader>
+          {selectedAppointment && (
+            <div className="space-y-4">
+              {/* Provider Info */}
+              <div className="flex items-center gap-3 p-3 bg-muted/50 rounded-lg">
+                <Avatar className="h-12 w-12">
+                  <AvatarImage src={selectedAppointment.provider_profile?.avatar_url || undefined} />
+                  <AvatarFallback>
+                    {selectedAppointment.provider_profile?.full_name?.charAt(0) || "P"}
+                  </AvatarFallback>
+                </Avatar>
+                <div>
+                  <p className="font-semibold">{selectedAppointment.provider_profile?.full_name}</p>
+                  <p className="text-sm text-muted-foreground">{selectedAppointment.provider?.profession}</p>
+                </div>
+              </div>
+
+              {/* Details Grid */}
+              <div className="grid gap-3">
+                <div className="flex items-center gap-2">
+                  <Calendar className="h-4 w-4 text-muted-foreground" />
+                  <span className="text-sm">
+                    {format(parseISO(selectedAppointment.appointment_date), "EEEE, MMMM d, yyyy")}
+                  </span>
+                </div>
+                <div className="flex items-center gap-2">
+                  <Clock className="h-4 w-4 text-muted-foreground" />
+                  <span className="text-sm">
+                    {formatTime(selectedAppointment.start_time)} - {formatTime(selectedAppointment.end_time)}
+                  </span>
+                </div>
+                {selectedAppointment.is_video_consultation ? (
+                  <div className="flex items-center gap-2">
+                    <Video className="h-4 w-4 text-blue-500" />
+                    <span className="text-sm">Video Consultation</span>
+                  </div>
+                ) : (
+                  <div className="flex items-center gap-2">
+                    <MapPin className="h-4 w-4 text-muted-foreground" />
+                    <span className="text-sm">{selectedAppointment.provider?.location || "In-Person"}</span>
+                  </div>
+                )}
+                <div className="flex items-center gap-2">
+                  <CreditCard className="h-4 w-4 text-muted-foreground" />
+                  <span className="text-sm">
+                    Fee: ₹{getAppointmentFee(selectedAppointment)}
+                  </span>
+                  {selectedAppointment.payment_status === "paid" ? (
+                    <Badge className="bg-green-500/10 text-green-600 border-green-200">Paid</Badge>
+                  ) : (
+                    <Badge variant="secondary">Unpaid</Badge>
+                  )}
+                </div>
+              </div>
+
+              {/* Status */}
+              <div className="flex items-center justify-between pt-2 border-t">
+                <span className="text-sm text-muted-foreground">Status</span>
+                {getStatusBadge(selectedAppointment.status)}
+              </div>
+
+              {/* Notes */}
+              {selectedAppointment.notes && (
+                <div className="pt-2 border-t">
+                  <p className="text-sm text-muted-foreground mb-1">Notes</p>
+                  <p className="text-sm">{selectedAppointment.notes}</p>
+                </div>
+              )}
+            </div>
+          )}
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setDetailsDialogOpen(false)}>
+              Close
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </Layout>
   );
 };

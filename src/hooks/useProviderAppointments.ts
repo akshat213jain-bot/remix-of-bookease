@@ -27,6 +27,11 @@ export interface ProviderAppointment {
   proposed_start_time: string | null;
   proposed_end_time: string | null;
   reschedule_reason: string | null;
+  // Payment fields
+  payment_status: string | null;
+  payment_method: string | null;
+  payment_amount: number | null;
+  payment_date: string | null;
   user_profile?: {
     full_name: string;
     email: string;
@@ -89,14 +94,14 @@ export const useProviderAppointments = () => {
 
   // Update appointment status
   const updateStatusMutation = useMutation({
-    mutationFn: async ({ 
-      id, 
-      status, 
+    mutationFn: async ({
+      id,
+      status,
       cancellation_reason,
-      appointment 
-    }: { 
-      id: string; 
-      status: AppointmentStatus; 
+      appointment
+    }: {
+      id: string;
+      status: AppointmentStatus;
       cancellation_reason?: string;
       appointment?: ProviderAppointment;
     }) => {
@@ -141,7 +146,7 @@ export const useProviderAppointments = () => {
             notificationType = "booking_cancelled";
             title = "Appointment Cancelled";
             message = `Your appointment with ${providerName} on ${formattedDate} at ${formattedTime} has been cancelled.${cancellation_reason ? ` Reason: ${cancellation_reason}` : ""}`;
-            
+
             // Trigger waitlist notification for cancelled slot
             try {
               await supabase.functions.invoke("waitlist-notify", {
@@ -174,7 +179,7 @@ export const useProviderAppointments = () => {
     },
     onSuccess: (_, variables) => {
       queryClient.invalidateQueries({ queryKey: ["provider-appointments", providerId] });
-      
+
       const statusMessages: Record<AppointmentStatus, string> = {
         approved: "Appointment approved! The patient has been notified via email.",
         rejected: "Appointment declined. The patient has been notified.",
@@ -232,12 +237,64 @@ export const useProviderAppointments = () => {
     );
   };
 
+  // Update payment status mutation
+  const updatePaymentMutation = useMutation({
+    mutationFn: async ({
+      id,
+      payment_status,
+      payment_method,
+      payment_amount,
+    }: {
+      id: string;
+      payment_status: string;
+      payment_method: string;
+      payment_amount?: number;
+    }) => {
+      const updateData: Record<string, unknown> = {
+        payment_status,
+        payment_method: payment_status === "paid" ? payment_method : null,
+        payment_date: payment_status === "paid" ? new Date().toISOString() : null,
+      };
+
+      if (payment_amount !== undefined) {
+        updateData.payment_amount = payment_amount;
+      }
+
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const { error } = await (supabase as any)
+        .from("appointments")
+        .update(updateData)
+        .eq("id", id);
+
+      if (error) throw error;
+    },
+    onSuccess: (_, variables) => {
+      queryClient.invalidateQueries({ queryKey: ["provider-appointments", providerId] });
+
+      toast({
+        title: variables.payment_status === "paid" ? "Payment Recorded" : "Payment Status Updated",
+        description: variables.payment_status === "paid"
+          ? `Payment of ${variables.payment_amount ? `₹${variables.payment_amount.toLocaleString("en-IN")} via ` : ""}${variables.payment_method.toUpperCase()} recorded successfully.`
+          : "Payment marked as unpaid.",
+      });
+    },
+    onError: (error) => {
+      toast({
+        title: "Error",
+        description: error.message || "Failed to update payment status",
+        variant: "destructive",
+      });
+    },
+  });
+
   return {
     appointments: appointmentsQuery.data || [],
     isLoading: appointmentsQuery.isLoading,
     error: appointmentsQuery.error,
     updateStatus: updateStatusMutation.mutate,
     isUpdating: updateStatusMutation.isPending,
+    updatePayment: updatePaymentMutation.mutate,
+    isUpdatingPayment: updatePaymentMutation.isPending,
     getTodayAppointments,
     getPendingAppointments,
     getUpcomingAppointments,

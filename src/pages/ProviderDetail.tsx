@@ -24,7 +24,7 @@ import { useAvailableSlots, useAppointments, RecurrencePattern } from "@/hooks/u
 import { useAuth } from "@/contexts/AuthContext";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
-import { format, addDays } from "date-fns";
+import { format, addDays, startOfDay } from "date-fns";
 import RecurringBookingOptions from "@/components/booking/RecurringBookingOptions";
 import JoinWaitlistDialog from "@/components/waitlist/JoinWaitlistDialog";
 import ProviderReviewsList from "@/components/reviews/ProviderReviewsList";
@@ -34,7 +34,7 @@ const ProviderDetail = () => {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const { user } = useAuth();
-  
+
   const { data: provider, isLoading, error } = useProvider(id);
   const [selectedDate, setSelectedDate] = useState<Date | undefined>(undefined);
   const [selectedTime, setSelectedTime] = useState<{ start: string; end: string } | null>(null);
@@ -44,7 +44,7 @@ const ProviderDetail = () => {
   const [recurrencePattern, setRecurrencePattern] = useState<RecurrencePattern>("none");
   const [recurrenceEndDate, setRecurrenceEndDate] = useState<Date | undefined>(undefined);
   const { toast } = useToast();
-  
+
   const { data: slots, isLoading: slotsLoading } = useAvailableSlots(id, selectedDate);
   const { createAppointmentAsync, isCreating } = useAppointments();
 
@@ -72,9 +72,9 @@ const ProviderDetail = () => {
     try {
       // Get consultation fee
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      const fee = isVideoConsultation && (provider as any)?.video_consultation_fee 
+      const fee = isVideoConsultation && (provider as any)?.video_consultation_fee
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        ? (provider as any).video_consultation_fee 
+        ? (provider as any).video_consultation_fee
         : provider?.consultation_fee;
 
       // Create the appointment first
@@ -104,7 +104,7 @@ const ProviderDetail = () => {
           });
 
           if (paymentError) throw paymentError;
-          
+
           if (data?.url) {
             // Redirect to Stripe Checkout
             window.open(data.url, "_blank");
@@ -190,7 +190,7 @@ const ProviderDetail = () => {
                       <h1 className="text-2xl font-bold">
                         {provider.profile?.full_name || "Provider"}
                       </h1>
-                      <VerificationBadge 
+                      <VerificationBadge
                         isVerified={(provider as any).is_verified || false}
                         verificationType={(provider as any).verification_type}
                         size="md"
@@ -290,8 +290,8 @@ const ProviderDetail = () => {
               </TabsContent>
 
               <TabsContent value="reviews" className="mt-4">
-                <ProviderReviewsList 
-                  providerId={id || ""} 
+                <ProviderReviewsList
+                  providerId={id || ""}
                   averageRating={(provider as any)?.average_rating}
                   totalReviews={(provider as any)?.total_reviews || 0}
                 />
@@ -317,7 +317,7 @@ const ProviderDetail = () => {
                       setSelectedTime(null);
                     }}
                     className="rounded-md border w-full"
-                    disabled={(date) => date < new Date() || date > addDays(new Date(), 60)}
+                    disabled={(date) => date < startOfDay(new Date()) || date > addDays(new Date(), 60)}
                   />
                 </div>
 
@@ -457,9 +457,9 @@ const ProviderDetail = () => {
                     <p className="text-sm text-muted-foreground text-center mb-3">
                       Can't find a suitable time?
                     </p>
-                    <JoinWaitlistDialog 
-                      providerId={id || ""} 
-                      providerName={provider?.profile?.full_name || "this provider"} 
+                    <JoinWaitlistDialog
+                      providerId={id || ""}
+                      providerName={provider?.profile?.full_name || "this provider"}
                     />
                   </div>
                 )}

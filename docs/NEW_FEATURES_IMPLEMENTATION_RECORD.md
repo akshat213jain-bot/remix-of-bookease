@@ -1,6 +1,6 @@
 # New Features Implementation Record
-## Date: 2026-01-28
-## Version: 7.1.0 (FINAL + COMPLIANCE + PAYMENTS)
+## Date: 2026-01-29
+## Version: 8.0.0 (FINAL + COMPLIANCE + PAYMENTS + APP IMPROVEMENTS)
 
 ---
 
@@ -10,7 +10,7 @@ Complete implementation record of **ALL backend files** created for new features
 
 🎉 **ALL 6 PHASES + COMPLIANCE + PAYMENT FEATURES COMPLETE!**
 
-**Last Updated:** 2026-01-28T11:32:00+05:30
+**Last Updated:** 2026-01-29T11:15:00+05:30
 
 ---
 
@@ -26,6 +26,8 @@ Complete implementation record of **ALL backend files** created for new features
 | Phase 6 | Week 11-12 | IP Whitelisting, A/B Testing, Insurance Add-ons | ✅ Complete |
 | **Compliance** | Bonus | WCAG Accessibility, PCI DSS, HIPAA, SOC 2 | ✅ Complete |
 | **Payments** | Bonus | Pending Payments, Email Reminders, Payment Notifications | ✅ Complete |
+| **Payment Tracking** | Bonus | Physical Visit Payment, Virtual Pre-Payment Gate | ✅ Complete |
+| **App Improvements** | Bonus | Performance, i18n, PWA, Search, UX Wizard | ✅ Complete |
 
 ---
 
@@ -127,6 +129,7 @@ Complete implementation record of **ALL backend files** created for new features
 | 15 | `PaymentButton` | `src/components/payments/PaymentButton.tsx` |
 | 16 | `PendingPaymentsPanel` | `src/components/provider/PendingPaymentsPanel.tsx` |
 | 17 | `ProviderEarningsDashboard` | `src/components/provider/ProviderEarningsDashboard.tsx` (Modified) |
+| 18 | `PaymentUpdateDialog` | `src/components/provider/PaymentUpdateDialog.tsx` | **NEW** Payment status/method dialog |
 
 ---
 
@@ -142,14 +145,14 @@ Complete implementation record of **ALL backend files** created for new features
 
 ## FINAL FILE COUNT SUMMARY
 
-| Category | Phase 1-6 | Compliance | Payments | **TOTAL** |
-|----------|-----------|------------|----------|-----------|
-| Edge Functions | 26 | 4 | 2 | **32** |
-| Backend Backups | 26 | 4 | 2 | **32** |
-| Database Schemas | 26 | 4 | 1 | **31** |
-| Frontend Components | 12 | 2 | 3 | **17** |
-| Frontend Hooks | - | - | 1 | **1** |
-| **Total Files** | 90 | 14 | 9 | **113** |
+| Category | Phase 1-6 | Compliance | Payments | Payment Tracking | **TOTAL** |
+|----------|-----------|------------|----------|------------------|-----------|
+| Edge Functions | 26 | 4 | 2 | 0 | **32** |
+| Backend Backups | 26 | 4 | 2 | 0 | **32** |
+| Database Schemas | 26 | 4 | 1 | 1 | **32** |
+| Frontend Components | 12 | 2 | 3 | 1 | **18** |
+| Frontend Hooks | - | - | 1 | 0 | **1** |
+| **Total Files** | 90 | 14 | 9 | 2 | **115** |
 
 ---
 
@@ -273,6 +276,149 @@ Complete implementation record of **ALL backend files** created for new features
 - `appointments` (payment_status column)
 - `outgoing_emails` (email delivery tracking)
 - `notifications` (in-app notifications)
+---
+
+## APPOINTMENT TYPE BASED PRICING (Latest Fix)
+
+Fix for consumer payment page to correctly recognize appointment types (physical vs video conferencing) and charge the appropriate fee.
+
+### Problem Fixed
+The consumer page was using only `consultation_fee` for all appointments, ignoring `is_video_consultation` flag and `video_consultation_fee`.
+
+### Files Modified
+
+| File | Path | Changes |
+|------|------|---------|
+| `useAppointments.ts` | `src/hooks/useAppointments.ts` | Added `video_consultation_fee` to ProviderInfo interface and query |
+| `UserDashboard.tsx` | `src/pages/dashboard/UserDashboard.tsx` | Added `getAppointmentFee` helper for type-based pricing |
+| `provider-earnings` | `supabase/functions/provider-earnings/index.ts` | Updated `get_pending_payments` to use video fee |
+| `send-payment-reminder` | `supabase/functions/send-payment-reminder/index.ts` | Calculate fee based on appointment type |
+| `PendingPaymentsPanel.tsx` | `src/components/provider/PendingPaymentsPanel.tsx` | Added Video badge indicator |
+| `useProviderPendingPayments.ts` | `src/hooks/useProviderPendingPayments.ts` | Added `is_video_consultation` to PendingPayment type |
+
+### Database Columns Used
+- `provider_profiles.consultation_fee` - Physical appointment fee
+- `provider_profiles.video_consultation_fee` - Video consultation fee  
+- `appointments.is_video_consultation` - Appointment type flag
+
+### Pricing Logic
+```typescript
+const getAppointmentFee = (appointment) => {
+  if (appointment.is_video_consultation) {
+    return video_consultation_fee || consultation_fee || 0;
+  }
+  return consultation_fee || 0;
+};
+```
+
+---
+
+## VIDEO CONSULTATION WAITING ROOM (Latest Feature)
+
+Waiting room feature where consumers wait until the provider admits them to the video call.
+
+### User Experience
+- **Consumer**: Clicks "Join Waiting Room" → sees animated waiting screen with provider name → joins automatically when admitted
+- **Provider**: Sees "Patient is waiting" notification → clicks "Admit Patient" → both join video call
+
+### Files Created/Modified
+
+| Type | File | Path | Description |
+|------|------|------|-------------|
+| NEW | `admit-patient` | `supabase/functions/admit-patient/index.ts` | Edge function for providers to admit waiting patients |
+| MODIFIED | `create-video-room` | `supabase/functions/create-video-room/index.ts` | Added waiting room logic for patients |
+| NEW | `WaitingRoom.tsx` | `src/components/video/WaitingRoom.tsx` | Waiting room UI with provider name display |
+| MODIFIED | `VideoConsultation.tsx` | `src/components/video/VideoConsultation.tsx` | Integrated waiting room flow with realtime updates |
+| NEW | Migration | `supabase/migrations/20260128_video_waiting_room.sql` | Adds `video_status` column |
+
+### Database Column Added
+- `appointments.video_status` - Values: `not_started`, `provider_ready`, `patient_waiting`, `admitted`, `in_call`, `ended`
+
+### Deployment Required
+```bash
+# Run in project root
+npx supabase functions deploy create-video-room
+npx supabase functions deploy admit-patient
+```
+
+---
+
+## PAYMENT TRACKING FOR PHYSICAL & VIRTUAL CONSULTATIONS (Latest Feature)
+
+Payment tracking system allowing providers to record payment status for physical visits, and pre-payment gate for virtual consultations.
+
+### Feature Overview
+- **Physical Visits**: Provider can mark payment as Paid/Unpaid with method (Cash/UPI/Card)
+- **Virtual Consultations**: Consumer must pay before joining video call (Pay Before Join)
+
+### Files Created/Modified
+
+| Type | File | Path | Description |
+|------|------|------|-------------|
+| NEW | Migration | `supabase/migrations/20260129_payment_method.sql` | Adds `payment_method` column with index |
+| NEW | `PaymentUpdateDialog.tsx` | `src/components/provider/PaymentUpdateDialog.tsx` | Dialog for providers to update payment status/method |
+| MODIFIED | `useProviderAppointments.ts` | `src/hooks/useProviderAppointments.ts` | Added payment fields to interface + `updatePayment` mutation |
+| MODIFIED | `ProviderDashboard.tsx` | `src/pages/dashboard/ProviderDashboard.tsx` | Payment badges + "Update Payment" menu option |
+| MODIFIED | `VideoConsultation.tsx` | `src/components/video/VideoConsultation.tsx` | Pre-payment gate for virtual consultations |
+
+### Database Column Added
+- `appointments.payment_method` - Values: `cash`, `upi`, `card`, `stripe`
+
+### Edge Function Used
+- `create-appointment-payment` - Stripe checkout for video consultation payments
+
+### Deployment Required
+```bash
+# Run migration
+npx supabase db push
+
+# Or manually apply
+psql -f supabase/migrations/20260129_payment_method.sql
+```
+
+---
+
+## APP IMPROVEMENTS (Latest Implementation)
+
+Comprehensive improvements organized into 3 phases: Technical, High-Impact Features, and UX Improvements.
+
+### Phase 1: Technical Improvements
+
+| Type | File | Path | Description |
+|------|------|------|-------------|
+| NEW | Migration | `supabase/migrations/20260129_performance_indexes.sql` | Database performance indexes |
+| NEW | `sentry.ts` | `src/lib/sentry.ts` | Sentry error monitoring setup |
+| NEW | `ErrorBoundary.tsx` | `src/components/ErrorBoundary.tsx` | React error boundary with Sentry |
+| NEW | `playwright.config.ts` | `playwright.config.ts` | Playwright E2E test config |
+| NEW | `booking.spec.ts` | `e2e/booking.spec.ts` | E2E tests for booking flow |
+| NEW | `lazy-image.tsx` | `src/components/ui/lazy-image.tsx` | Lazy loading image component |
+
+### Phase 2: High-Impact Features
+
+| Type | File | Path | Description |
+|------|------|------|-------------|
+| NEW | `i18n/index.ts` | `src/i18n/index.ts` | i18n configuration |
+| NEW | `en.json` | `src/i18n/locales/en.json` | English translations |
+| NEW | `hi.json` | `src/i18n/locales/hi.json` | Hindi translations |
+| NEW | `LanguageSwitcher.tsx` | `src/components/LanguageSwitcher.tsx` | Language switcher dropdown |
+| NEW | `manifest.json` | `public/manifest.json` | PWA manifest |
+| NEW | `sw.ts` | `public/sw.ts` | Service worker for PWA |
+| NEW | `AdvancedSearchFilters.tsx` | `src/components/providers/AdvancedSearchFilters.tsx` | Provider search filters |
+| NEW | `usePushNotifications.ts` | `src/hooks/usePushNotifications.ts` | Push notification hook |
+
+### Phase 3: UX Improvements
+
+| Type | File | Path | Description |
+|------|------|------|-------------|
+| NEW | `useSmartSlotSuggestions.ts` | `src/hooks/useSmartSlotSuggestions.ts` | Smart slot suggestions |
+| NEW | `ProviderOnboardingWizard.tsx` | `src/components/provider/ProviderOnboardingWizard.tsx` | Provider onboarding wizard |
+| NEW | `useAppointmentConflictCheck.ts` | `src/hooks/useAppointmentConflictCheck.ts` | Appointment conflict detection |
+
+### Dependencies to Install
+```bash
+npm install @sentry/react i18next react-i18next i18next-browser-languagedetector
+npm install -D @playwright/test
+```
 
 ---
 
@@ -280,10 +426,9 @@ Complete implementation record of **ALL backend files** created for new features
 Antigravity AI Assistant
 
 ## Project Last Updated
-2026-01-28T11:32:00+05:30
+2026-01-29T11:35:00+05:30
 
 ---
 
-🎉 **CONGRATULATIONS! All phases + compliance + payment features have been successfully implemented!**
-**Total: 113 files created/modified**
-
+🎉 **CONGRATULATIONS! All phases + compliance + payment + video waiting room + payment tracking + app improvements have been successfully implemented!**
+**Total: 137+ files created/modified**
