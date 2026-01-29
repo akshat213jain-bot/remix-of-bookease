@@ -97,7 +97,7 @@ Deno.serve(async (req) => {
             );
         }
 
-        logStep("Validation result", result);
+        logStep("Validation result", result as unknown as Record<string, unknown>);
 
         return new Response(
             JSON.stringify({
