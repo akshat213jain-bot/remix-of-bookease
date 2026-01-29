@@ -174,6 +174,39 @@ export type Database = {
         }
         Relationships: []
       }
+      badges: {
+        Row: {
+          created_at: string | null
+          criteria: Json | null
+          description: string | null
+          icon: string | null
+          id: string
+          is_active: boolean | null
+          name: string
+          points: number | null
+        }
+        Insert: {
+          created_at?: string | null
+          criteria?: Json | null
+          description?: string | null
+          icon?: string | null
+          id?: string
+          is_active?: boolean | null
+          name: string
+          points?: number | null
+        }
+        Update: {
+          created_at?: string | null
+          criteria?: Json | null
+          description?: string | null
+          icon?: string | null
+          id?: string
+          is_active?: boolean | null
+          name?: string
+          points?: number | null
+        }
+        Relationships: []
+      }
       booking_groups: {
         Row: {
           created_at: string
@@ -273,6 +306,110 @@ export type Database = {
             columns: ["conversation_id"]
             isOneToOne: false
             referencedRelation: "chat_conversations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      coupon_uses: {
+        Row: {
+          appointment_id: string | null
+          coupon_id: string
+          discount_applied: number
+          id: string
+          used_at: string | null
+          user_id: string
+        }
+        Insert: {
+          appointment_id?: string | null
+          coupon_id: string
+          discount_applied: number
+          id?: string
+          used_at?: string | null
+          user_id: string
+        }
+        Update: {
+          appointment_id?: string | null
+          coupon_id?: string
+          discount_applied?: number
+          id?: string
+          used_at?: string | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "coupon_uses_appointment_id_fkey"
+            columns: ["appointment_id"]
+            isOneToOne: false
+            referencedRelation: "appointments"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "coupon_uses_coupon_id_fkey"
+            columns: ["coupon_id"]
+            isOneToOne: false
+            referencedRelation: "coupons"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      coupons: {
+        Row: {
+          code: string
+          created_at: string | null
+          description: string | null
+          discount_type: string
+          discount_value: number
+          id: string
+          is_active: boolean | null
+          max_discount: number | null
+          min_purchase: number | null
+          provider_id: string | null
+          updated_at: string | null
+          usage_count: number | null
+          usage_limit: number | null
+          valid_from: string | null
+          valid_until: string | null
+        }
+        Insert: {
+          code: string
+          created_at?: string | null
+          description?: string | null
+          discount_type: string
+          discount_value: number
+          id?: string
+          is_active?: boolean | null
+          max_discount?: number | null
+          min_purchase?: number | null
+          provider_id?: string | null
+          updated_at?: string | null
+          usage_count?: number | null
+          usage_limit?: number | null
+          valid_from?: string | null
+          valid_until?: string | null
+        }
+        Update: {
+          code?: string
+          created_at?: string | null
+          description?: string | null
+          discount_type?: string
+          discount_value?: number
+          id?: string
+          is_active?: boolean | null
+          max_discount?: number | null
+          min_purchase?: number | null
+          provider_id?: string | null
+          updated_at?: string | null
+          usage_count?: number | null
+          usage_limit?: number | null
+          valid_from?: string | null
+          valid_until?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "coupons_provider_id_fkey"
+            columns: ["provider_id"]
+            isOneToOne: false
+            referencedRelation: "provider_profiles"
             referencedColumns: ["id"]
           },
         ]
@@ -401,6 +538,93 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      gift_card_transactions: {
+        Row: {
+          amount: number
+          appointment_id: string | null
+          created_at: string | null
+          gift_card_id: string
+          id: string
+          transaction_type: string
+          user_id: string | null
+        }
+        Insert: {
+          amount: number
+          appointment_id?: string | null
+          created_at?: string | null
+          gift_card_id: string
+          id?: string
+          transaction_type: string
+          user_id?: string | null
+        }
+        Update: {
+          amount?: number
+          appointment_id?: string | null
+          created_at?: string | null
+          gift_card_id?: string
+          id?: string
+          transaction_type?: string
+          user_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "gift_card_transactions_appointment_id_fkey"
+            columns: ["appointment_id"]
+            isOneToOne: false
+            referencedRelation: "appointments"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "gift_card_transactions_gift_card_id_fkey"
+            columns: ["gift_card_id"]
+            isOneToOne: false
+            referencedRelation: "gift_cards"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      gift_cards: {
+        Row: {
+          code: string
+          created_at: string | null
+          current_balance: number
+          expires_at: string | null
+          id: string
+          initial_value: number
+          is_active: boolean | null
+          message: string | null
+          purchased_by: string | null
+          recipient_email: string | null
+          recipient_name: string | null
+        }
+        Insert: {
+          code: string
+          created_at?: string | null
+          current_balance: number
+          expires_at?: string | null
+          id?: string
+          initial_value: number
+          is_active?: boolean | null
+          message?: string | null
+          purchased_by?: string | null
+          recipient_email?: string | null
+          recipient_name?: string | null
+        }
+        Update: {
+          code?: string
+          created_at?: string | null
+          current_balance?: number
+          expires_at?: string | null
+          id?: string
+          initial_value?: number
+          is_active?: boolean | null
+          message?: string | null
+          purchased_by?: string | null
+          recipient_email?: string | null
+          recipient_name?: string | null
+        }
+        Relationships: []
       }
       group_discounts: {
         Row: {
@@ -1027,6 +1251,65 @@ export type Database = {
           },
         ]
       }
+      service_packages: {
+        Row: {
+          created_at: string | null
+          description: string | null
+          discounted_price: number
+          id: string
+          is_active: boolean | null
+          is_featured: boolean | null
+          name: string
+          original_price: number
+          provider_id: string
+          savings_amount: number | null
+          savings_percentage: number | null
+          services: Json | null
+          updated_at: string | null
+          valid_days: number | null
+        }
+        Insert: {
+          created_at?: string | null
+          description?: string | null
+          discounted_price: number
+          id?: string
+          is_active?: boolean | null
+          is_featured?: boolean | null
+          name: string
+          original_price: number
+          provider_id: string
+          savings_amount?: number | null
+          savings_percentage?: number | null
+          services?: Json | null
+          updated_at?: string | null
+          valid_days?: number | null
+        }
+        Update: {
+          created_at?: string | null
+          description?: string | null
+          discounted_price?: number
+          id?: string
+          is_active?: boolean | null
+          is_featured?: boolean | null
+          name?: string
+          original_price?: number
+          provider_id?: string
+          savings_amount?: number | null
+          savings_percentage?: number | null
+          services?: Json | null
+          updated_at?: string | null
+          valid_days?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "service_packages_provider_id_fkey"
+            columns: ["provider_id"]
+            isOneToOne: false
+            referencedRelation: "provider_profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       slot_waitlist: {
         Row: {
           created_at: string
@@ -1143,6 +1426,54 @@ export type Database = {
         }
         Relationships: []
       }
+      tips: {
+        Row: {
+          amount: number
+          appointment_id: string | null
+          created_at: string | null
+          id: string
+          provider_id: string
+          status: string | null
+          stripe_payment_intent_id: string | null
+          user_id: string
+        }
+        Insert: {
+          amount: number
+          appointment_id?: string | null
+          created_at?: string | null
+          id?: string
+          provider_id: string
+          status?: string | null
+          stripe_payment_intent_id?: string | null
+          user_id: string
+        }
+        Update: {
+          amount?: number
+          appointment_id?: string | null
+          created_at?: string | null
+          id?: string
+          provider_id?: string
+          status?: string | null
+          stripe_payment_intent_id?: string | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "tips_appointment_id_fkey"
+            columns: ["appointment_id"]
+            isOneToOne: false
+            referencedRelation: "appointments"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "tips_provider_id_fkey"
+            columns: ["provider_id"]
+            isOneToOne: false
+            referencedRelation: "provider_profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       user_analytics: {
         Row: {
           average_booking_value: number | null
@@ -1189,6 +1520,76 @@ export type Database = {
             columns: ["favorite_provider_id"]
             isOneToOne: false
             referencedRelation: "provider_profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      user_badges: {
+        Row: {
+          badge_id: string
+          earned_at: string | null
+          id: string
+          user_id: string
+        }
+        Insert: {
+          badge_id: string
+          earned_at?: string | null
+          id?: string
+          user_id: string
+        }
+        Update: {
+          badge_id?: string
+          earned_at?: string | null
+          id?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "user_badges_badge_id_fkey"
+            columns: ["badge_id"]
+            isOneToOne: false
+            referencedRelation: "badges"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      user_packages: {
+        Row: {
+          expires_at: string
+          id: string
+          package_id: string
+          purchased_at: string | null
+          remaining_services: Json | null
+          status: string | null
+          stripe_payment_intent_id: string | null
+          user_id: string
+        }
+        Insert: {
+          expires_at: string
+          id?: string
+          package_id: string
+          purchased_at?: string | null
+          remaining_services?: Json | null
+          status?: string | null
+          stripe_payment_intent_id?: string | null
+          user_id: string
+        }
+        Update: {
+          expires_at?: string
+          id?: string
+          package_id?: string
+          purchased_at?: string | null
+          remaining_services?: Json | null
+          status?: string | null
+          stripe_payment_intent_id?: string | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "user_packages_package_id_fkey"
+            columns: ["package_id"]
+            isOneToOne: false
+            referencedRelation: "service_packages"
             referencedColumns: ["id"]
           },
         ]
@@ -1276,6 +1677,22 @@ export type Database = {
           _user_id: string
         }
         Returns: boolean
+      }
+      validate_coupon: {
+        Args: {
+          p_amount: number
+          p_code: string
+          p_service_id?: string
+          p_user_id: string
+        }
+        Returns: {
+          coupon_id: string
+          discount_amount: number
+          discount_type: string
+          discount_value: number
+          error_message: string
+          valid: boolean
+        }[]
       }
     }
     Enums: {

@@ -162,20 +162,21 @@ export const MyPackages = () => {
             const { data: { user } } = await supabase.auth.getUser();
             if (!user) return;
 
+            // Query user_packages with related service_packages data
             const { data, error } = await supabase
-                .from("user_packages")
+                .from("user_packages" as any)
                 .select(`
-          *,
-          service_packages (
-            name, description, services
-          )
-        `)
+                    *,
+                    service_packages (
+                        name, description, services
+                    )
+                `)
                 .eq("user_id", user.id)
                 .eq("status", "active")
                 .order("purchased_at", { ascending: false });
 
             if (error) throw error;
-            setPackages(data || []);
+            setPackages((data as any[]) || []);
         } catch (error) {
             console.error("Error loading packages:", error);
         } finally {
