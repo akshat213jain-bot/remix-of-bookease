@@ -159,9 +159,9 @@ const ApprovalRequestsPanel = () => {
 
       const { data: profiles } = requesterIds.length
         ? await supabase
-            .from("profiles")
-            .select("user_id, full_name, email")
-            .in("user_id", requesterIds)
+          .from("profiles")
+          .select("user_id, full_name, email")
+          .in("user_id", requesterIds)
         : { data: [] as Array<{ user_id: string; full_name: string; email: string }> };
 
       const profileMap = new Map(profiles?.map((p) => [p.user_id, p]) || []);
@@ -268,7 +268,10 @@ const ApprovalRequestsPanel = () => {
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const { error } = await (supabase as any)
         .from("provider_profiles")
-        .update(status === "approved" ? { is_approved: true } : { is_active: false })
+        .update(status === "approved"
+          ? { is_approved: true }
+          : { is_active: false, is_approved: null } // Mark as rejected, not pending
+        )
         .eq("id", item.provider_profile_id);
 
       if (error) throw error;

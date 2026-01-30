@@ -79,14 +79,14 @@ export const useProviders = (category?: string, searchQuery?: string) => {
           filteredData = filteredData.filter((provider: Provider) => {
             const profession = provider.profession?.toLowerCase() || "";
             const specialty = provider.specialty?.toLowerCase() || "";
-            return patterns.some(pattern => 
+            return patterns.some(pattern =>
               profession.includes(pattern) || specialty.includes(pattern)
             );
           });
         } else {
           // Fallback to exact or partial match
           const lowerCategory = category.toLowerCase();
-          filteredData = filteredData.filter((provider: Provider) => 
+          filteredData = filteredData.filter((provider: Provider) =>
             provider.profession?.toLowerCase().includes(lowerCategory) ||
             provider.specialty?.toLowerCase().includes(lowerCategory)
           );
@@ -96,7 +96,7 @@ export const useProviders = (category?: string, searchQuery?: string) => {
       // Filter by search query if provided
       if (searchQuery) {
         const lowerQuery = searchQuery.toLowerCase();
-        filteredData = filteredData.filter((provider: Provider) => 
+        filteredData = filteredData.filter((provider: Provider) =>
           provider.profile?.full_name?.toLowerCase().includes(lowerQuery) ||
           provider.profession?.toLowerCase().includes(lowerQuery) ||
           provider.specialty?.toLowerCase().includes(lowerQuery)
@@ -153,7 +153,7 @@ export const useProvidersPaginated = (category?: string, searchQuery?: string) =
       let filteredData = data;
       if (searchQuery) {
         const lowerQuery = searchQuery.toLowerCase();
-        filteredData = data.filter((provider: Provider) => 
+        filteredData = data.filter((provider: Provider) =>
           provider.profile?.full_name?.toLowerCase().includes(lowerQuery) ||
           provider.profession?.toLowerCase().includes(lowerQuery) ||
           provider.specialty?.toLowerCase().includes(lowerQuery)
@@ -184,6 +184,8 @@ export const useProvider = (providerId: string | undefined) => {
         .from("provider_profiles")
         .select("*")
         .eq("id", providerId)
+        .eq("is_approved", true) // Only show approved providers
+        .eq("is_active", true)   // Only show active providers
         .maybeSingle();
 
       if (error) throw error;

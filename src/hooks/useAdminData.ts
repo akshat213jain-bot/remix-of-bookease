@@ -125,6 +125,7 @@ export const useAdminData = () => {
         .from("provider_profiles")
         .select("*")
         .eq("is_approved", false)
+        .eq("is_active", true) // Only show active providers (not rejected ones)
         .order("created_at", { ascending: false });
 
       if (error) throw error;
@@ -176,13 +177,16 @@ export const useAdminData = () => {
     },
   });
 
-  // Reject provider (deactivate)
+  // Reject provider (deactivate and mark as rejected)
   const rejectProviderMutation = useMutation({
     mutationFn: async (providerId: string) => {
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const { error } = await (supabase as any)
         .from("provider_profiles")
-        .update({ is_active: false })
+        .update({
+          is_active: false,
+          is_approved: null // Mark as rejected (not pending, not approved)
+        })
         .eq("id", providerId);
 
       if (error) throw error;
@@ -207,7 +211,7 @@ export const useAdminData = () => {
   const getStats = () => {
     const appointments = appointmentsQuery.data || [];
     const pendingProviders = pendingProvidersQuery.data || [];
-    
+
     return {
       totalAppointments: appointments.length,
       pendingProviders: pendingProviders.length,

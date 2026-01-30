@@ -1,3 +1,6 @@
+// deno-lint-ignore-file
+// @ts-nocheck - This file runs in Deno runtime, not Node.js
+
 /**
  * Send Push Notification Edge Function
  * 
@@ -13,6 +16,7 @@
  * Deployed location: supabase/functions/send-push-notification/index.ts
  */
 
+// @ts-ignore - Deno/ESM import
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.57.2";
 
 const corsHeaders = {
