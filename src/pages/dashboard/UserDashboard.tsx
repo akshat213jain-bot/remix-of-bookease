@@ -52,6 +52,7 @@ import ReviewDialog from "@/components/reviews/ReviewDialog";
 import { InvoiceDownloadButton } from "@/components/payments/InvoiceDownloadButton";
 import { PaymentButton } from "@/components/payments/PaymentButton";
 import LoadingScreen from "@/components/ui/LoadingScreen";
+import { useMinLoadingTime } from "@/hooks/useMinLoadingTime";
 
 const getStatusBadge = (status: string) => {
   switch (status) {
@@ -105,6 +106,9 @@ const UserDashboard = () => {
     declineReschedule,
     isDeclining,
   } = useRescheduleRequests();
+
+  // Ensure loading screen shows for at least 2 seconds
+  const showLoading = useMinLoadingTime(isLoading, 2000);
 
   const { hasReview } = useUserReviews();
 
@@ -343,7 +347,7 @@ const UserDashboard = () => {
     );
   };
 
-  if (isLoading) {
+  if (showLoading) {
     return <LoadingScreen message="Loading your dashboard..." />;
   }
 

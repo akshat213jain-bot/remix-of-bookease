@@ -2,6 +2,7 @@ import { ReactNode } from "react";
 import { Navigate, useLocation } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
 import LoadingScreen from "@/components/ui/LoadingScreen";
+import { useMinLoadingTime } from "@/hooks/useMinLoadingTime";
 
 type AppRole = "user" | "provider" | "admin";
 
@@ -14,7 +15,10 @@ const ProtectedRoute = ({ children, allowedRoles }: ProtectedRouteProps) => {
   const { user, role, isLoading, isBlocked } = useAuth();
   const location = useLocation();
 
-  if (isLoading) {
+  // Ensure loading screen shows for at least 2 seconds
+  const showLoading = useMinLoadingTime(isLoading, 2000);
+
+  if (showLoading) {
     return <LoadingScreen message="Verifying your session..." />;
   }
 

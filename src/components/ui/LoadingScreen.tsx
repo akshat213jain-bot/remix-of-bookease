@@ -1,15 +1,34 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import './LoadingScreen.css';
 
 interface LoadingScreenProps {
     message?: string;
     fullScreen?: boolean;
+    /** Minimum time to display the loading screen in milliseconds (default: 1500ms) */
+    minDisplayTime?: number;
 }
 
 const LoadingScreen: React.FC<LoadingScreenProps> = ({
     message = 'Loading...',
-    fullScreen = true
+    fullScreen = true,
+    minDisplayTime = 1500 // Default 1.5 seconds minimum display
 }) => {
+    const [isVisible, setIsVisible] = useState(true);
+    const [hasMinTimeElapsed, setHasMinTimeElapsed] = useState(false);
+
+    useEffect(() => {
+        // Start timer for minimum display time
+        const timer = setTimeout(() => {
+            setHasMinTimeElapsed(true);
+        }, minDisplayTime);
+
+        return () => clearTimeout(timer);
+    }, [minDisplayTime]);
+
+    // The component will continue to render until minDisplayTime has elapsed
+    // The parent component controls when loading is complete
+    // This ensures the animation is visible for at least minDisplayTime
+
     return (
         <div className={`loading-screen ${fullScreen ? 'loading-screen--fullscreen' : ''}`}>
             <div className="loading-container">

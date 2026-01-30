@@ -63,6 +63,7 @@ import ProviderReviewsPanel from "@/components/provider/ProviderReviewsPanel";
 import ProviderAnalyticsDashboard from "@/components/provider/ProviderAnalyticsDashboard";
 import { PaymentUpdateDialog } from "@/components/provider/PaymentUpdateDialog";
 import LoadingScreen from "@/components/ui/LoadingScreen";
+import { useMinLoadingTime } from "@/hooks/useMinLoadingTime";
 
 const formatTime = (time: string) => {
   const [hours, minutes] = time.split(":");
@@ -114,6 +115,8 @@ const ProviderDashboard = () => {
   } = useRescheduleRequests();
 
   const { toast } = useToast();
+  // Ensure loading screen shows for at least 2 seconds
+  const showLoading = useMinLoadingTime(isLoading, 2000);
   const [rejectDialogOpen, setRejectDialogOpen] = useState(false);
   const [rescheduleDialogOpen, setRescheduleDialogOpen] = useState(false);
   const [videoDialogOpen, setVideoDialogOpen] = useState(false);
@@ -271,7 +274,7 @@ const ProviderDashboard = () => {
     setSelectedAppointment(null);
   };
 
-  if (isLoading) {
+  if (showLoading) {
     return <LoadingScreen message="Loading provider dashboard..." />;
   }
 

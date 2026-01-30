@@ -52,6 +52,7 @@ import { SubscriptionPlansPanel } from "@/components/admin/SubscriptionPlansPane
 import { DisputesPanel } from "@/components/disputes/DisputesPanel";
 import { DataExportPanel } from "@/components/admin/DataExportPanel";
 import LoadingScreen from "@/components/ui/LoadingScreen";
+import { useMinLoadingTime } from "@/hooks/useMinLoadingTime";
 
 const formatTime = (time: string) => {
   const [hours, minutes] = time.split(":");
@@ -91,6 +92,9 @@ const AdminDashboard = () => {
     getStats,
   } = useAdminData();
 
+  // Ensure loading screen shows for at least 2 seconds
+  const showLoading = useMinLoadingTime(isLoading, 2000);
+
   const stats = getStats();
 
   const statCards = [
@@ -111,7 +115,7 @@ const AdminDashboard = () => {
     );
   });
 
-  if (isLoading) {
+  if (showLoading) {
     return <LoadingScreen message="Loading admin panel..." />;
   }
 
