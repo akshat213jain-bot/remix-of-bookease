@@ -1,7 +1,8 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 
 /**
  * Hook that ensures a minimum loading time for better UX with loading animations.
+ * ALWAYS shows loading immediately on mount to prevent content flash.
  * Even if the actual loading completes quickly, this will keep isLoading true
  * until the minimum time has elapsed.
  * 
@@ -10,28 +11,39 @@ import { useState, useEffect } from 'react';
  * @returns boolean - Whether to show the loading state
  */
 export function useMinLoadingTime(actualIsLoading: boolean, minLoadingTime: number = 2000): boolean {
+    // Always start showing loading - this prevents any flash of content
     const [showLoading, setShowLoading] = useState(true);
-    const [loadingStartTime] = useState<number>(Date.now());
-    const [minTimeElapsed, setMinTimeElapsed] = useState(false);
+    const mountTimeRef = useRef<number>(Date.now());
+    const hasStartedLoadingRef = useRef(false);
+
+    // Track when actual loading starts
+    if (actualIsLoading && !hasStartedLoadingRef.current) {
+        hasStartedLoadingRef.current = true;
+    }
 
     useEffect(() => {
-        // Set timer for minimum loading time
-        const timer = setTimeout(() => {
-            setMinTimeElapsed(true);
-        }, minLoadingTime);
+        // If still actually loading, keep showing loading
+        if (actualIsLoading) {
+            return;
+        }
 
-        return () => clearTimeout(timer);
-    }, [minLoadingTime]);
+        // Calculate remaining time to show loading screen
+        const elapsedTime = Date.now() - mountTimeRef.current;
+        const remainingTime = Math.max(0, minLoadingTime - elapsedTime);
 
-    useEffect(() => {
-        // Only stop showing loading when:
-        // 1. Actual loading is complete AND
-        // 2. Minimum time has elapsed
-        if (!actualIsLoading && minTimeElapsed) {
+        if (remainingTime > 0) {
+            // Wait for remaining time before hiding loading screen
+            const timer = setTimeout(() => {
+                setShowLoading(false);
+            }, remainingTime);
+            return () => clearTimeout(timer);
+        } else {
+            // Minimum time has elapsed, hide loading screen
             setShowLoading(false);
         }
-    }, [actualIsLoading, minTimeElapsed]);
+    }, [actualIsLoading, minLoadingTime]);
 
+    // Always return true initially to prevent any content flash
     return showLoading;
 }
 
