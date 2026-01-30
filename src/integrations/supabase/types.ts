@@ -30,6 +30,7 @@ export type Database = {
           parent_appointment_id: string | null
           payment_amount: number | null
           payment_date: string | null
+          payment_method: string | null
           payment_status: string | null
           proposed_date: string | null
           proposed_end_time: string | null
@@ -61,6 +62,7 @@ export type Database = {
           parent_appointment_id?: string | null
           payment_amount?: number | null
           payment_date?: string | null
+          payment_method?: string | null
           payment_status?: string | null
           proposed_date?: string | null
           proposed_end_time?: string | null
@@ -92,6 +94,7 @@ export type Database = {
           parent_appointment_id?: string | null
           payment_amount?: number | null
           payment_date?: string | null
+          payment_method?: string | null
           payment_status?: string | null
           proposed_date?: string | null
           proposed_end_time?: string | null
