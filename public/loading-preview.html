@@ -1,0 +1,293 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Loading Screen Preview - Orbital Time</title>
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    }
+
+    /* LoadingScreen Styles */
+    .loading-screen {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background: linear-gradient(135deg, #1a1a2e 0%, #16213e 50%, #0f0f23 100%);
+      min-height: 100vh;
+    }
+
+    .loading-container {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 2rem;
+    }
+
+    /* Orbital Loader Container */
+    .orbital-loader {
+      position: relative;
+      width: 180px;
+      height: 180px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    /* Base Ring Styles */
+    .orbital-ring {
+      position: absolute;
+      border-radius: 50%;
+      border: 3px solid transparent;
+    }
+
+    /* Outer Ring - Slowest, Purple to Pink */
+    .orbital-ring--outer {
+      width: 180px;
+      height: 180px;
+      border-top-color: #6366f1;
+      border-right-color: #8b5cf6;
+      border-bottom-color: #a855f7;
+      border-left-color: transparent;
+      animation: orbit-outer 3s linear infinite;
+      box-shadow: 
+        0 0 20px rgba(99, 102, 241, 0.4),
+        inset 0 0 20px rgba(168, 85, 247, 0.2);
+    }
+
+    /* Middle Ring - Medium Speed, Mixed Gradient */
+    .orbital-ring--middle {
+      width: 130px;
+      height: 130px;
+      border-top-color: #a855f7;
+      border-right-color: #d946ef;
+      border-bottom-color: #ec4899;
+      border-left-color: transparent;
+      animation: orbit-middle 2s linear infinite reverse;
+      box-shadow: 
+        0 0 15px rgba(217, 70, 239, 0.4),
+        inset 0 0 15px rgba(236, 72, 153, 0.2);
+    }
+
+    /* Inner Ring - Fastest, Pink Focus */
+    .orbital-ring--inner {
+      width: 85px;
+      height: 85px;
+      border-top-color: #ec4899;
+      border-right-color: #f472b6;
+      border-bottom-color: #fb7185;
+      border-left-color: transparent;
+      animation: orbit-inner 1.2s linear infinite;
+      box-shadow: 
+        0 0 10px rgba(244, 114, 182, 0.5),
+        inset 0 0 10px rgba(251, 113, 133, 0.3);
+    }
+
+    /* Ring Gradient Overlays for Glassmorphism Effect */
+    .ring-gradient {
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      border-radius: 50%;
+      background: linear-gradient(
+        45deg,
+        rgba(255, 255, 255, 0.1) 0%,
+        transparent 50%,
+        rgba(255, 255, 255, 0.05) 100%
+      );
+    }
+
+    /* Center Clock Container */
+    .clock-center {
+      position: absolute;
+      width: 50px;
+      height: 50px;
+      background: linear-gradient(135deg, #6366f1 0%, #a855f7 50%, #ec4899 100%);
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      box-shadow: 
+        0 0 30px rgba(99, 102, 241, 0.6),
+        0 0 60px rgba(168, 85, 247, 0.4),
+        inset 0 0 20px rgba(255, 255, 255, 0.2);
+      animation: pulse-glow 2s ease-in-out infinite;
+    }
+
+    /* Clock Face */
+    .clock-face {
+      position: relative;
+      width: 40px;
+      height: 40px;
+      background: rgba(15, 15, 35, 0.8);
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    /* Clock Hands */
+    .clock-hand {
+      position: absolute;
+      background: linear-gradient(180deg, #f472b6 0%, #ec4899 100%);
+      border-radius: 2px;
+      transform-origin: bottom center;
+    }
+
+    .clock-hand--hour {
+      width: 3px;
+      height: 10px;
+      bottom: 50%;
+      left: calc(50% - 1.5px);
+      animation: clock-hour 8s linear infinite;
+    }
+
+    .clock-hand--minute {
+      width: 2px;
+      height: 14px;
+      bottom: 50%;
+      left: calc(50% - 1px);
+      animation: clock-minute 2s linear infinite;
+    }
+
+    /* Clock Center Dot */
+    .clock-dot {
+      width: 6px;
+      height: 6px;
+      background: #fff;
+      border-radius: 50%;
+      box-shadow: 0 0 8px rgba(255, 255, 255, 0.8);
+      z-index: 1;
+    }
+
+    /* Ambient Glow Effect */
+    .orbital-glow {
+      position: absolute;
+      width: 200px;
+      height: 200px;
+      border-radius: 50%;
+      background: radial-gradient(
+        circle,
+        rgba(99, 102, 241, 0.15) 0%,
+        rgba(168, 85, 247, 0.1) 40%,
+        rgba(236, 72, 153, 0.05) 70%,
+        transparent 100%
+      );
+      animation: glow-pulse 3s ease-in-out infinite;
+      pointer-events: none;
+    }
+
+    /* Loading Message */
+    .loading-message {
+      color: #e2e8f0;
+      font-size: 1.1rem;
+      font-weight: 500;
+      letter-spacing: 0.5px;
+      text-align: center;
+      animation: message-fade 2s ease-in-out infinite;
+      text-shadow: 0 0 20px rgba(99, 102, 241, 0.5);
+    }
+
+    /* ============ ANIMATIONS ============ */
+
+    @keyframes orbit-outer {
+      0% { transform: rotate(0deg); }
+      100% { transform: rotate(360deg); }
+    }
+
+    @keyframes orbit-middle {
+      0% { transform: rotate(0deg); }
+      100% { transform: rotate(360deg); }
+    }
+
+    @keyframes orbit-inner {
+      0% { transform: rotate(0deg); }
+      100% { transform: rotate(360deg); }
+    }
+
+    @keyframes clock-hour {
+      0% { transform: rotate(0deg); }
+      100% { transform: rotate(360deg); }
+    }
+
+    @keyframes clock-minute {
+      0% { transform: rotate(0deg); }
+      100% { transform: rotate(360deg); }
+    }
+
+    @keyframes pulse-glow {
+      0%, 100% {
+        transform: scale(1);
+        box-shadow: 
+          0 0 30px rgba(99, 102, 241, 0.6),
+          0 0 60px rgba(168, 85, 247, 0.4),
+          inset 0 0 20px rgba(255, 255, 255, 0.2);
+      }
+      50% {
+        transform: scale(1.05);
+        box-shadow: 
+          0 0 40px rgba(99, 102, 241, 0.8),
+          0 0 80px rgba(168, 85, 247, 0.5),
+          inset 0 0 25px rgba(255, 255, 255, 0.3);
+      }
+    }
+
+    @keyframes glow-pulse {
+      0%, 100% { opacity: 0.6; transform: scale(1); }
+      50% { opacity: 1; transform: scale(1.1); }
+    }
+
+    @keyframes message-fade {
+      0%, 100% { opacity: 0.7; }
+      50% { opacity: 1; }
+    }
+  </style>
+</head>
+<body>
+  <div class="loading-screen">
+    <div class="loading-container">
+      <!-- Orbital Animation Container -->
+      <div class="orbital-loader">
+        <!-- Outer Ring -->
+        <div class="orbital-ring orbital-ring--outer">
+          <div class="ring-gradient"></div>
+        </div>
+        
+        <!-- Middle Ring -->
+        <div class="orbital-ring orbital-ring--middle">
+          <div class="ring-gradient"></div>
+        </div>
+        
+        <!-- Inner Ring -->
+        <div class="orbital-ring orbital-ring--inner">
+          <div class="ring-gradient"></div>
+        </div>
+        
+        <!-- Center Clock -->
+        <div class="clock-center">
+          <div class="clock-face">
+            <div class="clock-hand clock-hand--hour"></div>
+            <div class="clock-hand clock-hand--minute"></div>
+            <div class="clock-dot"></div>
+          </div>
+        </div>
+        
+        <!-- Glow Effect -->
+        <div class="orbital-glow"></div>
+      </div>
+      
+      <!-- Loading Message -->
+      <p class="loading-message">Loading your experience...</p>
+    </div>
+  </div>
+</body>
+</html>
