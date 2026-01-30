@@ -1,7 +1,7 @@
 import { ReactNode } from "react";
 import { Navigate, useLocation } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
-import { Loader2 } from "lucide-react";
+import LoadingScreen from "@/components/ui/LoadingScreen";
 
 type AppRole = "user" | "provider" | "admin";
 
@@ -15,11 +15,7 @@ const ProtectedRoute = ({ children, allowedRoles }: ProtectedRouteProps) => {
   const location = useLocation();
 
   if (isLoading) {
-    return (
-      <div className="min-h-screen flex items-center justify-center">
-        <Loader2 className="h-8 w-8 animate-spin text-primary" />
-      </div>
-    );
+    return <LoadingScreen message="Verifying your session..." />;
   }
 
   if (!user) {
@@ -34,12 +30,12 @@ const ProtectedRoute = ({ children, allowedRoles }: ProtectedRouteProps) => {
 
   if (allowedRoles && role && !allowedRoles.includes(role)) {
     // User doesn't have required role, redirect to appropriate dashboard
-    const redirectPath = role === "admin" 
-      ? "/dashboard/admin" 
-      : role === "provider" 
-      ? "/dashboard/provider" 
-      : "/dashboard/user";
-    
+    const redirectPath = role === "admin"
+      ? "/dashboard/admin"
+      : role === "provider"
+        ? "/dashboard/provider"
+        : "/dashboard/user";
+
     return <Navigate to={redirectPath} replace />;
   }
 

@@ -62,6 +62,7 @@ import WaitlistManagementPanel from "@/components/provider/WaitlistManagementPan
 import ProviderReviewsPanel from "@/components/provider/ProviderReviewsPanel";
 import ProviderAnalyticsDashboard from "@/components/provider/ProviderAnalyticsDashboard";
 import { PaymentUpdateDialog } from "@/components/provider/PaymentUpdateDialog";
+import LoadingScreen from "@/components/ui/LoadingScreen";
 
 const formatTime = (time: string) => {
   const [hours, minutes] = time.split(":");
@@ -271,13 +272,7 @@ const ProviderDashboard = () => {
   };
 
   if (isLoading) {
-    return (
-      <Layout showFooter={false}>
-        <div className="min-h-screen flex items-center justify-center">
-          <Loader2 className="h-8 w-8 animate-spin text-primary" />
-        </div>
-      </Layout>
-    );
+    return <LoadingScreen message="Loading provider dashboard..." />;
   }
 
   return (

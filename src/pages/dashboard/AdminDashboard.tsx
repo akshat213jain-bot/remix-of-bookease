@@ -51,6 +51,7 @@ import EmailDeliveryPanel from "@/components/admin/EmailDeliveryPanel";
 import { SubscriptionPlansPanel } from "@/components/admin/SubscriptionPlansPanel";
 import { DisputesPanel } from "@/components/disputes/DisputesPanel";
 import { DataExportPanel } from "@/components/admin/DataExportPanel";
+import LoadingScreen from "@/components/ui/LoadingScreen";
 
 const formatTime = (time: string) => {
   const [hours, minutes] = time.split(":");
@@ -79,11 +80,11 @@ const getStatusBadge = (status: string) => {
 
 const AdminDashboard = () => {
   const [searchQuery, setSearchQuery] = useState("");
-  const { 
-    appointments, 
-    pendingProviders, 
-    isLoading, 
-    approveProvider, 
+  const {
+    appointments,
+    pendingProviders,
+    isLoading,
+    approveProvider,
     rejectProvider,
     isApproving,
     isRejecting,
@@ -111,13 +112,7 @@ const AdminDashboard = () => {
   });
 
   if (isLoading) {
-    return (
-      <Layout showFooter={false}>
-        <div className="min-h-screen flex items-center justify-center">
-          <Loader2 className="h-8 w-8 animate-spin text-primary" />
-        </div>
-      </Layout>
-    );
+    return <LoadingScreen message="Loading admin panel..." />;
   }
 
   return (
@@ -150,7 +145,7 @@ const AdminDashboard = () => {
                 <p className="text-xs text-muted-foreground mt-1">{stat.trend}</p>
               </CardContent>
             </Card>
-        ))}
+          ))}
         </div>
 
         <Tabs defaultValue="analytics" className="space-y-6">
@@ -264,16 +259,16 @@ const AdminDashboard = () => {
                             </p>
                           </div>
                           <div className="flex gap-2">
-                            <Button 
-                              size="sm" 
+                            <Button
+                              size="sm"
                               onClick={() => approveProvider(provider.id)}
                               disabled={isApproving || isRejecting}
                             >
                               <UserCheck className="h-4 w-4 mr-1" />
                               Approve
                             </Button>
-                            <Button 
-                              size="sm" 
+                            <Button
+                              size="sm"
                               variant="destructive"
                               onClick={() => rejectProvider(provider.id)}
                               disabled={isApproving || isRejecting}
@@ -299,8 +294,8 @@ const AdminDashboard = () => {
                   <CardTitle>All Appointments</CardTitle>
                   <div className="relative w-full sm:w-64">
                     <Search className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
-                    <Input 
-                      placeholder="Search appointments..." 
+                    <Input
+                      placeholder="Search appointments..."
                       className="pl-10"
                       value={searchQuery}
                       onChange={(e) => setSearchQuery(e.target.value)}

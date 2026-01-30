@@ -51,6 +51,7 @@ import CalendarSyncCard from "@/components/calendar/CalendarSyncCard";
 import ReviewDialog from "@/components/reviews/ReviewDialog";
 import { InvoiceDownloadButton } from "@/components/payments/InvoiceDownloadButton";
 import { PaymentButton } from "@/components/payments/PaymentButton";
+import LoadingScreen from "@/components/ui/LoadingScreen";
 
 const getStatusBadge = (status: string) => {
   switch (status) {
@@ -343,13 +344,7 @@ const UserDashboard = () => {
   };
 
   if (isLoading) {
-    return (
-      <Layout showFooter={false}>
-        <div className="min-h-screen flex items-center justify-center">
-          <Loader2 className="h-8 w-8 animate-spin text-primary" />
-        </div>
-      </Layout>
-    );
+    return <LoadingScreen message="Loading your dashboard..." />;
   }
 
   return (
