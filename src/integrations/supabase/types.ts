@@ -1047,6 +1047,7 @@ export type Database = {
           phone: string | null
           phone_verified: boolean | null
           profession: string
+          require_video_payment: boolean | null
           sms_notifications_enabled: boolean | null
           specialty: string | null
           stripe_account_id: string | null
@@ -1079,6 +1080,7 @@ export type Database = {
           phone?: string | null
           phone_verified?: boolean | null
           profession: string
+          require_video_payment?: boolean | null
           sms_notifications_enabled?: boolean | null
           specialty?: string | null
           stripe_account_id?: string | null
@@ -1111,6 +1113,7 @@ export type Database = {
           phone?: string | null
           phone_verified?: boolean | null
           profession?: string
+          require_video_payment?: boolean | null
           sms_notifications_enabled?: boolean | null
           specialty?: string | null
           stripe_account_id?: string | null

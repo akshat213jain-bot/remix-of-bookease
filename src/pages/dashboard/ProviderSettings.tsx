@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
 import Layout from "@/components/layout/Layout";
 import { Button } from "@/components/ui/button";
@@ -25,6 +25,7 @@ import {
   Loader2,
   Check,
   RefreshCw,
+  CreditCard,
 } from "lucide-react";
 
 const ProviderSettings = () => {
@@ -36,6 +37,7 @@ const ProviderSettings = () => {
   const [profileVisible, setProfileVisible] = useState(true);
   const [showPhoneNumber, setShowPhoneNumber] = useState(false);
   const [showVideoOption, setShowVideoOption] = useState(providerProfile?.video_enabled ?? false);
+  const [requireVideoPayment, setRequireVideoPayment] = useState(providerProfile?.require_video_payment ?? true);
 
   // Notification Preferences
   const [emailNotifications, setEmailNotifications] = useState(true);
@@ -49,6 +51,15 @@ const ProviderSettings = () => {
   const [googleCalendarConnected, setGoogleCalendarConnected] = useState(false);
   const [autoSyncEnabled, setAutoSyncEnabled] = useState(true);
   const [syncBothWays, setSyncBothWays] = useState(false);
+  
+  // Update state when providerProfile loads
+  useEffect(() => {
+    if (providerProfile) {
+      setProfileVisible(providerProfile.is_active ?? true);
+      setShowVideoOption(providerProfile.video_enabled ?? false);
+      setRequireVideoPayment(providerProfile.require_video_payment ?? true);
+    }
+  }, [providerProfile]);
 
   const handleSaveVisibility = async () => {
     if (!providerProfile?.id) return;
@@ -60,6 +71,7 @@ const ProviderSettings = () => {
         .update({
           is_active: profileVisible,
           video_enabled: showVideoOption,
+          require_video_payment: requireVideoPayment,
         })
         .eq("id", providerProfile.id);
 
@@ -197,6 +209,28 @@ const ProviderSettings = () => {
                   onCheckedChange={setShowVideoOption}
                 />
               </div>
+
+              {showVideoOption && (
+                <>
+                  <Separator />
+
+                  <div className="flex items-center justify-between">
+                    <div className="space-y-0.5">
+                      <Label className="text-base font-medium flex items-center gap-2">
+                        <CreditCard className="h-4 w-4" />
+                        Require Payment for Video Calls
+                      </Label>
+                      <p className="text-sm text-muted-foreground">
+                        When disabled, clients can join video consultations without paying
+                      </p>
+                    </div>
+                    <Switch
+                      checked={requireVideoPayment}
+                      onCheckedChange={setRequireVideoPayment}
+                    />
+                  </div>
+                </>
+              )}
 
               <div className="flex justify-end pt-4">
                 <Button onClick={handleSaveVisibility} disabled={saving}>
