@@ -25,6 +25,7 @@ interface ProviderProfile {
   is_active: boolean | null;
   video_enabled: boolean | null;
   video_consultation_fee: number | null;
+  require_video_payment: boolean | null;
 }
 
 interface UpdateProfileData {
@@ -43,6 +44,7 @@ interface UpdateProviderProfileData {
   is_active?: boolean | null;
   video_enabled?: boolean | null;
   video_consultation_fee?: number | null;
+  require_video_payment?: boolean | null;
 }
 
 export const useProfile = () => {

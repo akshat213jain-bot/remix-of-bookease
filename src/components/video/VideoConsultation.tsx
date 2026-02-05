@@ -68,15 +68,29 @@ export const VideoConsultation = ({
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
         const { data, error } = await (supabase as any)
           .from("appointments")
-          .select("payment_status, payment_amount, provider:provider_id(consultation_fee, video_consultation_fee)")
+          .select("payment_status, payment_amount, provider:provider_id(consultation_fee, video_consultation_fee, require_video_payment)")
           .eq("id", appointmentId)
           .single();
 
         if (error) throw error;
         setPaymentStatus(data?.payment_status || "unpaid");
-        // Use video_consultation_fee if available, otherwise consultation_fee, or default to payment_amount
-        const fee = data?.provider?.video_consultation_fee || data?.provider?.consultation_fee || data?.payment_amount || 500;
+        
+        // Check if provider requires video payment
+        const requiresPayment = data?.provider?.require_video_payment ?? true;
+        
+        // Use nullish coalescing to properly handle 0 values
+        // If video_consultation_fee is explicitly set (including 0), use it
+        // Otherwise fall back to consultation_fee, then payment_amount
+        const videoFee = data?.provider?.video_consultation_fee;
+        const consultationFee = data?.provider?.consultation_fee;
+        const fee = videoFee ?? consultationFee ?? data?.payment_amount ?? 500;
+        
         setPaymentAmount(fee);
+        
+        // If provider doesn't require payment OR fee is 0, mark as paid
+        if (!requiresPayment || fee === 0) {
+          setPaymentStatus("paid");
+        }
       } catch (err) {
         console.error("Failed to check payment status:", err);
         setPaymentStatus("unpaid");
