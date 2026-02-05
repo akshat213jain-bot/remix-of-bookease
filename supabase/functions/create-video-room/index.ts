@@ -1,12 +1,17 @@
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 
+ // Static Daily.co room URL for this app
+ const STATIC_ROOM_URL = "https://easebooking.daily.co/AppointmentApp";
+ const STATIC_ROOM_NAME = "AppointmentApp";
+ 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
 };
 
-interface CreateRoomRequest {
+interface VideoRoomRequest {
   appointment_id: string;
+   action?: "join" | "create";
 }
 
 Deno.serve(async (req) => {
@@ -49,7 +54,7 @@ Deno.serve(async (req) => {
       );
     }
 
-    const { appointment_id }: CreateRoomRequest = await req.json();
+    const { appointment_id, action = "join" }: VideoRoomRequest = await req.json();
 
     if (!appointment_id) {
       return new Response(
@@ -58,7 +63,7 @@ Deno.serve(async (req) => {
       );
     }
 
-    console.log(`Creating video room for appointment: ${appointment_id}`);
+    console.log(`Video room request for appointment: ${appointment_id}, action: ${action}, user: ${user.id}`);
 
     // Get appointment details
     const { data: appointment, error: appointmentError } = await supabase
@@ -89,153 +94,75 @@ Deno.serve(async (req) => {
       );
     }
 
-    // WAITING ROOM LOGIC
-    // If patient is trying to join
-    if (isPatient) {
-      // Check if room exists and if they're admitted
-      if (appointment.meeting_url && appointment.meeting_room_name) {
-        // Room exists - check video status
-        if (appointment.video_status === "admitted" || appointment.video_status === "in_call") {
-          // Patient is admitted, return room URL
-          console.log(`Patient admitted, returning room URL`);
-          return new Response(
-            JSON.stringify({
-              room_url: appointment.meeting_url,
-              room_name: appointment.meeting_room_name,
-              status: "admitted"
-            }),
-            { headers: { ...corsHeaders, "Content-Type": "application/json" } }
-          );
-        } else {
-          // Patient needs to wait - update status to waiting
-          await supabase
-            .from("appointments")
-            .update({ video_status: "patient_waiting" })
-            .eq("id", appointment_id);
-
-          console.log(`Patient is waiting for admission`);
-          return new Response(
-            JSON.stringify({
-              status: "waiting",
-              message: "Waiting for provider to admit you"
-            }),
-            { headers: { ...corsHeaders, "Content-Type": "application/json" } }
-          );
-        }
-      } else {
-        // No room yet - set status to patient waiting
-        await supabase
-          .from("appointments")
-          .update({ video_status: "patient_waiting" })
-          .eq("id", appointment_id);
-
-        console.log(`Patient waiting, no room created yet`);
-        return new Response(
-          JSON.stringify({
-            status: "waiting",
-            message: "Waiting for provider to start the consultation"
-          }),
-          { headers: { ...corsHeaders, "Content-Type": "application/json" } }
-        );
-      }
-    }
-
-    // PROVIDER LOGIC - Create room if needed
-    if (isProvider) {
-      // Check if room already exists
-      if (appointment.meeting_url && appointment.meeting_room_name) {
-        console.log(`Room already exists: ${appointment.meeting_room_name}`);
-
-        // Update status to provider ready
-        await supabase
-          .from("appointments")
-          .update({ video_status: "provider_ready" })
-          .eq("id", appointment_id);
-
-        return new Response(
-          JSON.stringify({
-            room_url: appointment.meeting_url,
-            room_name: appointment.meeting_room_name,
-            status: "provider_ready",
-            patient_waiting: appointment.video_status === "patient_waiting"
-          }),
-          { headers: { ...corsHeaders, "Content-Type": "application/json" } }
-        );
-      }
-
-      // Calculate room expiry (appointment end time + 1 hour buffer)
-      const appointmentDate = new Date(`${appointment.appointment_date}T${appointment.end_time}`);
-      const expiryTime = new Date(appointmentDate.getTime() + 60 * 60 * 1000);
-
-      // Create Daily.co room
-      const roomName = `appointment-${appointment_id}-${Date.now()}`;
-
-      const dailyResponse = await fetch("https://api.daily.co/v1/rooms", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          "Authorization": `Bearer ${DAILY_API_KEY}`,
+    // Get user's profile for display name
+    const { data: profile } = await supabase
+      .from("profiles")
+      .select("full_name")
+      .eq("user_id", user.id)
+      .single();
+ 
+    const userName = profile?.full_name || user.email?.split("@")[0] || "User";
+ 
+    // Calculate token expiry (appointment end time + 2 hours buffer)
+    const appointmentDate = new Date(`${appointment.appointment_date}T${appointment.end_time}`);
+    const expiryTime = new Date(appointmentDate.getTime() + 2 * 60 * 60 * 1000);
+ 
+    // Generate meeting token for the static room
+    console.log(`Generating token for user ${userName} in room ${STATIC_ROOM_NAME}`);
+ 
+    const tokenResponse = await fetch("https://api.daily.co/v1/meeting-tokens", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "Authorization": `Bearer ${DAILY_API_KEY}`,
+      },
+      body: JSON.stringify({
+        properties: {
+          room_name: STATIC_ROOM_NAME,
+          user_id: user.id,
+          user_name: userName,
+          is_owner: isProvider,
+          exp: Math.floor(expiryTime.getTime() / 1000),
+          enable_screenshare: true,
+          start_video_off: false,
+          start_audio_off: false,
         },
-        body: JSON.stringify({
-          name: roomName,
-          privacy: "private",
-          properties: {
-            exp: Math.floor(expiryTime.getTime() / 1000),
-            enable_chat: true,
-            enable_screenshare: true,
-            max_participants: 2,
-            enable_prejoin_ui: true,
-            enable_knocking: false,
-            start_audio_off: false,
-            start_video_off: false,
-          },
-        }),
-      });
-
-      if (!dailyResponse.ok) {
-        const errorText = await dailyResponse.text();
-        console.error("Daily.co API error:", errorText);
-        return new Response(
-          JSON.stringify({ error: "Failed to create video room" }),
-          { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-        );
-      }
-
-      const dailyRoom = await dailyResponse.json();
-      console.log(`Room created: ${dailyRoom.url}`);
-
-      // Check if patient was already waiting
-      const patientWaiting = appointment.video_status === "patient_waiting";
-
-      // Update appointment with meeting URL and status
-      const { error: updateError } = await supabase
-        .from("appointments")
-        .update({
-          meeting_url: dailyRoom.url,
-          meeting_room_name: roomName,
-          video_status: "provider_ready",
-        })
-        .eq("id", appointment_id);
-
-      if (updateError) {
-        console.error("Failed to update appointment:", updateError);
-      }
-
+      }),
+    });
+ 
+    if (!tokenResponse.ok) {
+      const errorText = await tokenResponse.text();
+      console.error("Daily.co token API error:", errorText);
       return new Response(
-        JSON.stringify({
-          room_url: dailyRoom.url,
-          room_name: roomName,
-          status: "provider_ready",
-          patient_waiting: patientWaiting
-        }),
-        { headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        JSON.stringify({ error: "Failed to generate meeting token" }),
+        { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
-
-    // Fallback
+ 
+    const tokenData = await tokenResponse.json();
+    console.log(`Token generated successfully for ${userName}`);
+ 
+    // Update appointment with meeting URL if not already set
+    if (!appointment.meeting_url) {
+      await supabase
+        .from("appointments")
+        .update({
+          meeting_url: STATIC_ROOM_URL,
+          meeting_room_name: STATIC_ROOM_NAME,
+        })
+        .eq("id", appointment_id);
+    }
+ 
+    // Return room URL with token
     return new Response(
-      JSON.stringify({ error: "Invalid request" }),
-      { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      JSON.stringify({
+        room_url: `${STATIC_ROOM_URL}?t=${tokenData.token}`,
+        room_name: STATIC_ROOM_NAME,
+        token: tokenData.token,
+        user_name: userName,
+        is_provider: isProvider,
+      }),
+      { headers: { ...corsHeaders, "Content-Type": "application/json" } }
     );
 
   } catch (error) {
