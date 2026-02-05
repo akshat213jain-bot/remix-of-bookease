@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef } from "react";
+import { DailyVideoCall } from "./DailyVideoCall";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -9,7 +10,6 @@ import {
   MicOff,
   Phone,
   Loader2,
-  ExternalLink,
   AlertCircle,
   UserCheck,
   Bell,
@@ -42,6 +42,8 @@ export const VideoConsultation = ({
   onClose,
 }: VideoConsultationProps) => {
   const [roomUrl, setRoomUrl] = useState<string | null>(null);
+  const [meetingToken, setMeetingToken] = useState<string | null>(null);
+  const [userName, setUserName] = useState<string>("");
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [isInCall, setIsInCall] = useState(false);
@@ -51,7 +53,6 @@ export const VideoConsultation = ({
   const [paymentStatus, setPaymentStatus] = useState<string | null>(null);
   const [isProcessingPayment, setIsProcessingPayment] = useState(false);
   const [isCheckingPayment, setIsCheckingPayment] = useState(true);
-  const iframeRef = useRef<HTMLIFrameElement>(null);
   const { toast } = useToast();
 
   const [paymentAmount, setPaymentAmount] = useState<number | null>(null);
@@ -157,6 +158,8 @@ export const VideoConsultation = ({
 
       if (data.room_url) {
         setRoomUrl(data.room_url);
+        setMeetingToken(data.token);
+        setUserName(data.user_name || "User");
       }
     } catch (err) {
       console.error("Failed to fetch room after admission:", err);
@@ -214,6 +217,8 @@ export const VideoConsultation = ({
         });
       } else if (data.room_url) {
         setRoomUrl(data.room_url);
+        setMeetingToken(data.token);
+        setUserName(data.user_name || "User");
 
         // Check if patient is waiting (for provider)
         if (isProvider && data.patient_waiting) {
@@ -272,14 +277,10 @@ export const VideoConsultation = ({
   const leaveCall = () => {
     setIsInCall(false);
     setIsWaiting(false);
+    setRoomUrl(null);
+    setMeetingToken(null);
     if (onClose) {
       onClose();
-    }
-  };
-
-  const openInNewTab = () => {
-    if (roomUrl) {
-      window.open(roomUrl, "_blank");
     }
   };
 
@@ -406,25 +407,14 @@ export const VideoConsultation = ({
   }
 
   // If in call, show full-screen video
-  if (isInCall && roomUrl) {
+  if (isInCall && roomUrl && meetingToken) {
     return (
-      <div className="fixed inset-0 z-50 bg-background">
-        <div className="absolute top-4 right-4 z-10 flex gap-2">
-          <Button variant="outline" size="sm" onClick={openInNewTab}>
-            <ExternalLink className="h-4 w-4 mr-2" />
-            Open in New Tab
-          </Button>
-          <Button variant="destructive" size="sm" onClick={leaveCall}>
-            <Phone className="h-4 w-4 mr-2" />
-            Leave Call
-          </Button>
-        </div>
-        <iframe
-          ref={iframeRef}
-          src={roomUrl}
-          allow="camera; microphone; fullscreen; display-capture; autoplay"
-          className="w-full h-full border-0"
-          title="Video Consultation"
+      <div className="fixed inset-0 z-50">
+        <DailyVideoCall
+          roomUrl={roomUrl}
+          userName={userName}
+          onLeave={leaveCall}
+          isProvider={isProvider}
         />
       </div>
     );
@@ -533,14 +523,10 @@ export const VideoConsultation = ({
             <p className="text-muted-foreground mb-4">
               Your video room is ready. Click to join the call.
             </p>
-            <div className="flex justify-center gap-2">
+            <div className="flex justify-center">
               <Button onClick={joinCall} size="lg">
                 <Video className="h-4 w-4 mr-2" />
                 Join Video Call
-              </Button>
-              <Button variant="outline" onClick={openInNewTab}>
-                <ExternalLink className="h-4 w-4 mr-2" />
-                Open in New Tab
               </Button>
             </div>
           </div>
