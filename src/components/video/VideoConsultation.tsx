@@ -412,6 +412,7 @@ export const VideoConsultation = ({
       <div className="fixed inset-0 z-50">
         <DailyVideoCall
           roomUrl={roomUrl}
+          token={meetingToken || undefined}
           userName={userName}
           onLeave={leaveCall}
           isProvider={isProvider}
