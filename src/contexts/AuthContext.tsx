@@ -1,7 +1,6 @@
 import React, { createContext, useContext, useEffect, useState, ReactNode } from "react";
 import { User, Session } from "@supabase/supabase-js";
 import { supabase } from "@/integrations/supabase/client";
-import { useNavigate } from "react-router-dom";
 import { useToast } from "@/hooks/use-toast";
 
 type AppRole = "user" | "provider" | "admin";
@@ -48,11 +47,12 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const [isBlocked, setIsBlocked] = useState(false);
   const { toast } = useToast();
 
+  // Fix #3: Explicit columns — no phone_verification_code or other sensitive fields
   const fetchProfile = async (userId: string): Promise<boolean> => {
     try {
       const { data: profileData, error: profileError } = await supabase
         .from("profiles")
-        .select("*")
+        .select("id, user_id, full_name, email, phone, avatar_url, status, status_reason")
         .eq("user_id", userId)
         .maybeSingle();
 

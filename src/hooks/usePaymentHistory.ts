@@ -10,7 +10,6 @@ interface PaymentTransaction {
   payment_status: string;
   payment_amount: number | null;
   payment_date: string | null;
-  stripe_payment_intent_id: string | null;
   provider_id: string;
   status: string;
   is_video_consultation: boolean;
@@ -18,6 +17,7 @@ interface PaymentTransaction {
   provider_profession?: string;
 }
 
+// Fix #6: Explicit columns, no stripe_payment_intent_id exposed
 export const usePaymentHistory = () => {
   const { user } = useAuth();
 
@@ -29,7 +29,7 @@ export const usePaymentHistory = () => {
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const { data: appointments, error } = await (supabase as any)
         .from("appointments")
-        .select("*")
+        .select("id, appointment_date, start_time, end_time, payment_status, payment_amount, payment_date, payment_method, provider_id, status, is_video_consultation")
         .eq("user_id", user.id)
         .not("payment_amount", "is", null)
         .order("payment_date", { ascending: false, nullsFirst: false });
@@ -71,7 +71,6 @@ export const usePaymentHistory = () => {
     enabled: !!user?.id,
   });
 
-  // Calculate totals
   const getTotals = () => {
     const payments = paymentHistoryQuery.data || [];
     const paid = payments.filter(p => p.payment_status === "paid");

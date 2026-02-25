@@ -22,6 +22,17 @@ export interface Review {
   };
 }
 
+export interface PublicReview {
+  id: string;
+  provider_id: string;
+  rating: number;
+  review_text: string | null;
+  is_visible: boolean;
+  provider_response: string | null;
+  provider_response_at: string | null;
+  created_at: string;
+}
+
 export interface CreateReviewInput {
   appointment_id: string;
   provider_id: string;
@@ -29,7 +40,7 @@ export interface CreateReviewInput {
   review_text?: string;
 }
 
-// Hook for users to manage their reviews
+// Hook for users to manage their reviews — explicit columns (#17)
 export const useUserReviews = () => {
   const { user } = useAuth();
   const { toast } = useToast();
@@ -43,7 +54,7 @@ export const useUserReviews = () => {
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const { data, error } = await (supabase as any)
         .from("reviews")
-        .select("*")
+        .select("id, user_id, provider_id, appointment_id, rating, review_text, is_visible, provider_response, provider_response_at, created_at, updated_at")
         .eq("user_id", user.id)
         .order("created_at", { ascending: false });
 
@@ -90,7 +101,6 @@ export const useUserReviews = () => {
     },
   });
 
-  // Check if appointment already has a review
   const hasReview = (appointmentId: string): boolean => {
     return (reviewsQuery.data || []).some(r => r.appointment_id === appointmentId);
   };
@@ -104,7 +114,7 @@ export const useUserReviews = () => {
   };
 };
 
-// Hook for providers to view and respond to reviews
+// Hook for providers to view and respond to reviews — explicit columns (#17)
 export const useProviderReviews = () => {
   const { providerProfile } = useProviderProfile();
   const { toast } = useToast();
@@ -119,7 +129,7 @@ export const useProviderReviews = () => {
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const { data, error } = await (supabase as any)
         .from("reviews")
-        .select("*")
+        .select("id, user_id, provider_id, appointment_id, rating, review_text, is_visible, provider_response, provider_response_at, created_at, updated_at")
         .eq("provider_id", providerId)
         .order("created_at", { ascending: false });
 
@@ -127,7 +137,7 @@ export const useProviderReviews = () => {
 
       if (!data || data.length === 0) return [];
 
-      // Fetch user profiles
+      // Batch fetch user profiles
       const userIds: string[] = [];
       data.forEach((review: Review) => {
         if (review.user_id && !userIds.includes(review.user_id)) {
@@ -183,7 +193,6 @@ export const useProviderReviews = () => {
     },
   });
 
-  // Calculate stats
   const averageRating = reviewsQuery.data?.length
     ? reviewsQuery.data.reduce((sum, r) => sum + r.rating, 0) / reviewsQuery.data.length
     : 0;
@@ -204,48 +213,23 @@ export const useProviderReviews = () => {
   };
 };
 
-// Hook for public provider reviews (for provider detail page)
+// Fix #4: Public reviews now use reviews_public view — no user_id or appointment_id exposed
 export const usePublicProviderReviews = (providerId?: string) => {
   const reviewsQuery = useQuery({
     queryKey: ["public-reviews", providerId],
-    queryFn: async (): Promise<Review[]> => {
+    queryFn: async (): Promise<PublicReview[]> => {
       if (!providerId) return [];
 
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const { data, error } = await (supabase as any)
-        .from("reviews")
-        .select("*")
+        .from("reviews_public")
+        .select("id, provider_id, rating, review_text, is_visible, provider_response, provider_response_at, created_at")
         .eq("provider_id", providerId)
         .eq("is_visible", true)
         .order("created_at", { ascending: false });
 
       if (error) throw error;
-
-      if (!data || data.length === 0) return [];
-
-      // Fetch user profiles
-      const userIds: string[] = [];
-      data.forEach((review: Review) => {
-        if (review.user_id && !userIds.includes(review.user_id)) {
-          userIds.push(review.user_id);
-        }
-      });
-
-      if (userIds.length > 0) {
-        const { data: profiles } = await supabase
-          .from("profiles")
-          .select("user_id, full_name, avatar_url")
-          .in("user_id", userIds);
-
-        if (profiles) {
-          const profileMap = new Map(profiles.map(p => [p.user_id, p]));
-          data.forEach((review: Review) => {
-            review.user_profile = profileMap.get(review.user_id);
-          });
-        }
-      }
-
-      return data;
+      return data || [];
     },
     enabled: !!providerId,
   });

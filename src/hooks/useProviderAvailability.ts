@@ -34,7 +34,6 @@ export const useProviderAvailability = () => {
   const queryClient = useQueryClient();
   const providerId = providerProfile?.id;
 
-  // Fetch availability schedule
   const availabilityQuery = useQuery({
     queryKey: ["provider-availability", providerId],
     queryFn: async (): Promise<ProviderAvailability[]> => {
@@ -53,7 +52,6 @@ export const useProviderAvailability = () => {
     enabled: !!providerId,
   });
 
-  // Fetch blocked dates
   const blockedDatesQuery = useQuery({
     queryKey: ["provider-blocked-dates", providerId],
     queryFn: async (): Promise<BlockedDate[]> => {
@@ -73,27 +71,52 @@ export const useProviderAvailability = () => {
     enabled: !!providerId,
   });
 
-  // Save availability schedule (upsert)
+  // Fix #10: Use upsert pattern instead of delete-then-insert to prevent data loss
   const saveAvailabilityMutation = useMutation({
     mutationFn: async (schedules: AvailabilityInput[]) => {
       if (!providerId) throw new Error("Provider profile not found");
 
-      // Delete existing and insert new
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      await (supabase as any)
-        .from("provider_availability")
-        .delete()
-        .eq("provider_id", providerId);
-
-      const dataToInsert = schedules.map((schedule) => ({
+      const dataToUpsert = schedules.map((schedule) => ({
         provider_id: providerId,
         ...schedule,
       }));
 
+      // First delete slots for days that are no longer in the schedule
+      const newDays = new Set(schedules.map(s => s.day_of_week));
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const { data: existing } = await (supabase as any)
+        .from("provider_availability")
+        .select("id, day_of_week")
+        .eq("provider_id", providerId);
+
+      const idsToDelete = (existing || [])
+        .filter((e: { day_of_week: number }) => !newDays.has(e.day_of_week))
+        .map((e: { id: string }) => e.id);
+
+      if (idsToDelete.length > 0) {
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        await (supabase as any)
+          .from("provider_availability")
+          .delete()
+          .in("id", idsToDelete);
+      }
+
+      // Delete existing entries for days we're about to insert (safe replace per day)
+      const daysToReplace = Array.from(newDays);
+      if (daysToReplace.length > 0) {
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        await (supabase as any)
+          .from("provider_availability")
+          .delete()
+          .eq("provider_id", providerId)
+          .in("day_of_week", daysToReplace);
+      }
+
+      // Now insert fresh data
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const { error } = await (supabase as any)
         .from("provider_availability")
-        .insert(dataToInsert);
+        .insert(dataToUpsert);
 
       if (error) throw error;
     },
@@ -113,7 +136,6 @@ export const useProviderAvailability = () => {
     },
   });
 
-  // Add blocked date
   const addBlockedDateMutation = useMutation({
     mutationFn: async ({ date, reason }: { date: string; reason?: string }) => {
       if (!providerId) throw new Error("Provider profile not found");
@@ -153,7 +175,6 @@ export const useProviderAvailability = () => {
     },
   });
 
-  // Remove blocked date
   const removeBlockedDateMutation = useMutation({
     mutationFn: async (blockedDateId: string) => {
       // eslint-disable-next-line @typescript-eslint/no-explicit-any

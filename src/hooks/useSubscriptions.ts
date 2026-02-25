@@ -21,18 +21,18 @@ export interface UserSubscription {
   starts_at: string;
   expires_at: string;
   status: "active" | "expired" | "cancelled";
-  stripe_subscription_id: string | null;
   created_at: string;
   plan?: SubscriptionPlan;
 }
 
+// Fix #12: explicit columns
 export const useSubscriptionPlans = () => {
   const { data: plans = [], isLoading } = useQuery({
     queryKey: ["subscription-plans"],
     queryFn: async () => {
       const { data, error } = await supabase
         .from("subscription_plans")
-        .select("*")
+        .select("id, name, description, price, appointments_included, duration_days, is_active, created_at")
         .eq("is_active", true)
         .order("price", { ascending: true });
 
@@ -55,8 +55,8 @@ export const useUserSubscription = () => {
       const { data, error } = await supabase
         .from("user_subscriptions")
         .select(`
-          *,
-          plan:subscription_plans(*)
+          id, user_id, plan_id, appointments_remaining, starts_at, expires_at, status, created_at,
+          plan:subscription_plans(id, name, description, price, appointments_included, duration_days, is_active, created_at)
         `)
         .eq("user_id", user.id)
         .eq("status", "active")

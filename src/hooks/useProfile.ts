@@ -47,6 +47,7 @@ interface UpdateProviderProfileData {
   require_video_payment?: boolean | null;
 }
 
+// Fix #3: Explicit columns — no phone_verification_code or other sensitive fields
 export const useProfile = () => {
   const { user } = useAuth();
   const { toast } = useToast();
@@ -59,7 +60,7 @@ export const useProfile = () => {
       
       const { data, error } = await supabase
         .from("profiles")
-        .select("*")
+        .select("id, user_id, full_name, email, phone, avatar_url")
         .eq("user_id", user.id)
         .maybeSingle();
 
@@ -77,7 +78,7 @@ export const useProfile = () => {
         .from("profiles")
         .update(updates)
         .eq("user_id", user.id)
-        .select()
+        .select("id, user_id, full_name, email, phone, avatar_url")
         .maybeSingle();
 
       if (error) throw error;
@@ -109,6 +110,7 @@ export const useProfile = () => {
   };
 };
 
+// Fix #11: Explicit columns — no stripe_account_id, verification_documents
 export const useProviderProfile = () => {
   const { user, role } = useAuth();
   const { toast } = useToast();
@@ -122,7 +124,7 @@ export const useProviderProfile = () => {
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const { data, error } = await (supabase as any)
         .from("provider_profiles")
-        .select("*")
+        .select("id, user_id, profession, specialty, bio, consultation_fee, location, years_of_experience, is_approved, is_active, video_enabled, video_consultation_fee, require_video_payment")
         .eq("user_id", user.id)
         .maybeSingle();
 

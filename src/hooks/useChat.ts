@@ -36,6 +36,7 @@ export interface ChatConversation {
   unreadCount?: number;
 }
 
+// Fix #7: Batch all enrichment queries instead of N+1
 export const useChat = () => {
   const { user } = useAuth();
   const { toast } = useToast();
@@ -49,7 +50,7 @@ export const useChat = () => {
       const { data, error } = await supabase
         .from("chat_conversations")
         .select(`
-          *,
+          id, user_id, provider_id, last_message_at, created_at,
           provider:provider_profiles(
             id,
             profession,
@@ -59,60 +60,65 @@ export const useChat = () => {
         .order("last_message_at", { ascending: false });
 
       if (error) throw error;
+      if (!data || data.length === 0) return [];
 
-      // Enrich with profile info and last message
-      const enrichedConversations = await Promise.all(
-        (data || []).map(async (conv) => {
-          // Get provider profile
-          let providerProfile = null;
-          if (conv.provider) {
-            const { data: profile } = await supabase
-              .from("profiles")
-              .select("full_name, avatar_url")
-              .eq("user_id", conv.provider.user_id)
-              .maybeSingle();
-            providerProfile = profile;
-          }
+      // Collect all user_ids we need profiles for (batch)
+      const allUserIds = new Set<string>();
+      const conversationIds: string[] = [];
+      data.forEach((conv) => {
+        allUserIds.add(conv.user_id);
+        if (conv.provider?.user_id) allUserIds.add(conv.provider.user_id);
+        conversationIds.push(conv.id);
+      });
 
-          // Get user profile
-          const { data: userProfile } = await supabase
-            .from("profiles")
-            .select("full_name, avatar_url")
-            .eq("user_id", conv.user_id)
-            .maybeSingle();
+      // Batch fetch all profiles at once
+      const { data: profiles } = await supabase
+        .from("profiles")
+        .select("user_id, full_name, avatar_url")
+        .in("user_id", Array.from(allUserIds));
 
-          // Get last message
-          const { data: lastMessage } = await supabase
-            .from("chat_messages")
-            .select("*")
-            .eq("conversation_id", conv.id)
-            .order("created_at", { ascending: false })
-            .limit(1)
-            .maybeSingle();
+      const profileMap = new Map(profiles?.map(p => [p.user_id, p]) || []);
 
-          // Get unread count
-          const { count: unreadCount } = await supabase
-            .from("chat_messages")
-            .select("*", { count: "exact", head: true })
-            .eq("conversation_id", conv.id)
-            .eq("is_read", false)
-            .neq("sender_id", user.id);
+      // Batch fetch last messages for all conversations using a single query
+      // We'll get the latest message per conversation by fetching recent messages and deduping
+      const { data: recentMessages } = await supabase
+        .from("chat_messages")
+        .select("id, conversation_id, sender_id, message, is_read, created_at")
+        .in("conversation_id", conversationIds)
+        .order("created_at", { ascending: false });
 
-          return {
-            ...conv,
-            provider: conv.provider ? { ...conv.provider, profile: providerProfile } : undefined,
-            user: userProfile,
-            lastMessage,
-            unreadCount: unreadCount || 0,
-          };
-        })
-      );
+      const lastMessageMap = new Map<string, ChatMessage>();
+      const unreadCountMap = new Map<string, number>();
 
-      return enrichedConversations as ChatConversation[];
+      // Initialize unread counts
+      conversationIds.forEach(id => unreadCountMap.set(id, 0));
+
+      (recentMessages || []).forEach((msg) => {
+        // Track last message per conversation
+        if (!lastMessageMap.has(msg.conversation_id)) {
+          lastMessageMap.set(msg.conversation_id, msg as ChatMessage);
+        }
+        // Count unread messages not from current user
+        if (!msg.is_read && msg.sender_id !== user.id) {
+          unreadCountMap.set(msg.conversation_id, (unreadCountMap.get(msg.conversation_id) || 0) + 1);
+        }
+      });
+
+      return data.map((conv) => ({
+        ...conv,
+        provider: conv.provider ? {
+          ...conv.provider,
+          profile: profileMap.get(conv.provider.user_id) || null,
+        } : undefined,
+        user: profileMap.get(conv.user_id) || null,
+        lastMessage: lastMessageMap.get(conv.id) || null,
+        unreadCount: unreadCountMap.get(conv.id) || 0,
+      })) as ChatConversation[];
     },
     enabled: !!user?.id,
   });
 
+  // Fix #15: Check for existing conversation before creating (dedup already exists)
   const createConversationMutation = useMutation({
     mutationFn: async (providerId: string) => {
       if (!user?.id) throw new Error("Must be logged in");
@@ -168,7 +174,7 @@ export const useChatMessages = (conversationId: string | null) => {
 
       const { data, error } = await supabase
         .from("chat_messages")
-        .select("*")
+        .select("id, conversation_id, sender_id, message, is_read, created_at")
         .eq("conversation_id", conversationId)
         .order("created_at", { ascending: true });
 
@@ -178,7 +184,6 @@ export const useChatMessages = (conversationId: string | null) => {
     enabled: !!conversationId,
   });
 
-  // Subscribe to realtime messages
   useEffect(() => {
     if (!conversationId) return;
 
@@ -204,7 +209,6 @@ export const useChatMessages = (conversationId: string | null) => {
     };
   }, [conversationId, queryClient]);
 
-  // Combine fetched and realtime messages
   const allMessages = [...messages, ...realtimeMessages.filter(
     (rm) => !messages.some((m) => m.id === rm.id)
   )];

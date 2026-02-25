@@ -36,6 +36,7 @@ export interface Referral {
   };
 }
 
+// Fix #12: explicit columns; Fix #8: batch referral profile lookup
 export const useLoyalty = () => {
   const { user } = useAuth();
 
@@ -46,7 +47,7 @@ export const useLoyalty = () => {
 
       const { data, error } = await supabase
         .from("loyalty_points")
-        .select("*")
+        .select("id, user_id, total_points, lifetime_points, created_at, updated_at")
         .eq("user_id", user.id)
         .maybeSingle();
 
@@ -63,7 +64,7 @@ export const useLoyalty = () => {
 
       const { data, error } = await supabase
         .from("loyalty_transactions")
-        .select("*")
+        .select("id, user_id, points, transaction_type, description, related_appointment_id, created_at")
         .eq("user_id", user.id)
         .order("created_at", { ascending: false })
         .limit(50);
@@ -81,29 +82,26 @@ export const useLoyalty = () => {
 
       const { data, error } = await supabase
         .from("referrals")
-        .select("*")
+        .select("id, referrer_id, referred_id, referral_code, status, bonus_awarded, created_at, completed_at")
         .eq("referrer_id", user.id)
         .order("created_at", { ascending: false });
 
       if (error) throw error;
+      if (!data || data.length === 0) return [];
 
-      // Enrich with referred user info
-      const enrichedReferrals = await Promise.all(
-        (data || []).map(async (ref) => {
-          const { data: profile } = await supabase
-            .from("profiles")
-            .select("full_name, avatar_url")
-            .eq("user_id", ref.referred_id)
-            .maybeSingle();
+      // Batch fetch referred user profiles instead of N+1
+      const referredIds = [...new Set(data.map(r => r.referred_id))];
+      const { data: profiles } = await supabase
+        .from("profiles")
+        .select("user_id, full_name, avatar_url")
+        .in("user_id", referredIds);
 
-          return {
-            ...ref,
-            referred_user: profile,
-          };
-        })
-      );
+      const profileMap = new Map(profiles?.map(p => [p.user_id, p]) || []);
 
-      return enrichedReferrals as Referral[];
+      return data.map(ref => ({
+        ...ref,
+        referred_user: profileMap.get(ref.referred_id) || null,
+      })) as Referral[];
     },
     enabled: !!user?.id,
   });
