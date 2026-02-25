@@ -15,16 +15,7 @@ export const useProviderAnalytics = () => {
   return useQuery({
     queryKey: ["provider-analytics"],
     queryFn: async (): Promise<AnalyticsData> => {
-      const { data: sessionData } = await supabase.auth.getSession();
-      if (!sessionData?.session?.access_token) {
-        throw new Error("Not authenticated");
-      }
-
-      const { data, error } = await supabase.functions.invoke("provider-analytics", {
-        headers: {
-          Authorization: `Bearer ${sessionData.session.access_token}`,
-        },
-      });
+      const { data, error } = await supabase.functions.invoke("provider-analytics");
 
       if (error) throw error;
       return data;

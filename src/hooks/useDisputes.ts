@@ -46,11 +46,34 @@ export const useDisputes = () => {
         .select(`
           id, appointment_id, user_id, provider_id, dispute_type, description, status, resolution, resolved_by, resolved_at, created_at, updated_at,
           appointment:appointments(appointment_date, start_time),
-          provider:provider_profiles(profession)
+          provider:provider_profiles(profession, user_id)
         `)
         .order("created_at", { ascending: false });
       if (error) throw error;
-      return data || [];
+      if (!data || data.length === 0) return [];
+
+      // Batch fetch user profiles and provider profiles
+      const allUserIds = new Set<string>();
+      data.forEach((d: any) => {
+        allUserIds.add(d.user_id);
+        if (d.provider?.user_id) allUserIds.add(d.provider.user_id);
+      });
+
+      const { data: profiles } = await supabase
+        .from("profiles")
+        .select("user_id, full_name, email")
+        .in("user_id", Array.from(allUserIds));
+
+      const profileMap = new Map(profiles?.map(p => [p.user_id, p]) || []);
+
+      return data.map((d: any) => ({
+        ...d,
+        user: profileMap.get(d.user_id) || undefined,
+        provider: d.provider ? {
+          ...d.provider,
+          profile: profileMap.get(d.provider.user_id) || undefined,
+        } : undefined,
+      }));
     },
     enabled: !!user?.id,
   });

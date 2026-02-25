@@ -94,10 +94,17 @@ export const usePushNotifications = () => {
         applicationServerKey: urlBase64ToUint8Array(vapidPublicKey) as BufferSource,
       });
 
-      // Send subscription to server
-      await supabase.functions.invoke("register-push-subscription", {
-        body: { subscription: subscription.toJSON() },
-      });
+      // Store subscription directly in the database
+      const sub = subscription.toJSON();
+      const { data: { session } } = await supabase.auth.getSession();
+      if (session?.user?.id) {
+        await supabase.from("push_subscriptions").upsert({
+          user_id: session.user.id,
+          endpoint: sub.endpoint!,
+          p256dh: sub.keys!.p256dh!,
+          auth: sub.keys!.auth!,
+        }, { onConflict: "user_id,endpoint" });
+      }
 
       setState({
         isSupported: true,
@@ -135,10 +142,15 @@ export const usePushNotifications = () => {
       if (subscription) {
         await subscription.unsubscribe();
 
-        // Notify server
-        await supabase.functions.invoke("unregister-push-subscription", {
-          body: { endpoint: subscription.endpoint },
-        });
+        // Remove subscription from database
+        const { data: { session } } = await supabase.auth.getSession();
+        if (session?.user?.id) {
+          await supabase
+            .from("push_subscriptions")
+            .delete()
+            .eq("user_id", session.user.id)
+            .eq("endpoint", subscription.endpoint);
+        }
       }
 
       setState((prev) => ({

@@ -64,11 +64,12 @@ export function useDailyCall(options: UseDailyCallOptions = {}) {
       }));
 
       // Update call status to active
-      if (options.calleeId) {
+      if (options.calleeId && user) {
         supabase
           .from("calls")
           .update({ status: "active", started_at: new Date().toISOString() })
           .eq("room_url", roomUrl)
+          .or(`caller_id.eq.${user.id},callee_id.eq.${user.id}`)
           .then();
       }
     });
@@ -278,14 +279,15 @@ export function useDailyCall(options: UseDailyCallOptions = {}) {
         callRef.current = null;
 
         // Update call status in database
-        if (callState.roomUrl) {
+        if (callState.roomUrl && user) {
           await supabase
             .from("calls")
             .update({
               status: "ended",
               ended_at: new Date().toISOString(),
             })
-            .eq("room_url", callState.roomUrl);
+            .eq("room_url", callState.roomUrl)
+            .or(`caller_id.eq.${user.id},callee_id.eq.${user.id}`);
         }
 
         setCallState(prev => ({
