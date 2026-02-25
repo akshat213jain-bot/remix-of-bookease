@@ -31,7 +31,7 @@ import {
 } from "lucide-react";
 import { format } from "date-fns";
 
-const COLORS = ["hsl(var(--primary))", "hsl(var(--accent))", "#10b981", "#f59e0b", "#ef4444", "#8b5cf6"];
+const COLORS = ["hsl(var(--primary))", "hsl(var(--chart-2))", "hsl(var(--chart-3))", "hsl(var(--chart-4))", "hsl(var(--destructive))"];
 
 import { formatCurrency } from "@/lib/currency";
 
@@ -82,11 +82,30 @@ const AdminAnalyticsDashboard = ({ showKpis = true }: AdminAnalyticsDashboardPro
 
   // Status distribution for pie chart
   const statusData = overview?.statusDistribution
-    ? Object.entries(overview.statusDistribution).map(([name, value]) => ({
-        name: name.charAt(0).toUpperCase() + name.slice(1),
-        value,
-      }))
+    ? Object.entries(overview.statusDistribution)
+        .filter(([, value]) => value > 0)
+        .map(([name, value]) => ({
+          name: name.charAt(0).toUpperCase() + name.slice(1),
+          statusKey: name.toLowerCase(),
+          value,
+        }))
     : [];
+
+  const getStatusColor = (statusKey: string, index: number) => {
+    switch (statusKey) {
+      case "completed":
+        return "hsl(var(--primary))";
+      case "approved":
+        return "hsl(var(--chart-4))";
+      case "pending":
+        return "hsl(var(--chart-3))";
+      case "rejected":
+      case "cancelled":
+        return "hsl(var(--destructive))";
+      default:
+        return "hsl(var(--chart-2))";
+    }
+  };
 
   // Format hourly distribution
   const hourlyData = timeSlotAnalytics?.hourlyDistribution.map((h) => ({
@@ -258,11 +277,16 @@ const AdminAnalyticsDashboard = ({ showKpis = true }: AdminAnalyticsDashboardPro
                       startAngle={90}
                       endAngle={-270}
                     >
-                      {statusData.map((_, index) => (
-                        <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
+                      {statusData.map((status, index) => (
+                        <Cell
+                          key={`cell-${index}`}
+                          fill={getStatusColor(status.statusKey, index)}
+                          stroke="transparent"
+                          strokeWidth={0}
+                        />
                       ))}
                     </Pie>
-                    <Tooltip
+                    <Tooltip cursor={false}
                       contentStyle={{
                         backgroundColor: "hsl(var(--card))",
                         border: "1px solid hsl(var(--border))",
