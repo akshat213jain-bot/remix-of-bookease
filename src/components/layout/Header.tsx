@@ -1,7 +1,7 @@
 import { Link, useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Calendar, Menu, X, User, LogOut, LayoutDashboard, MessageCircle, Heart, Gift } from "lucide-react";
-import { useState } from "react";
+import React, { useState } from "react";
 import { useAuth } from "@/contexts/AuthContext";
 import {
   DropdownMenu,
@@ -14,7 +14,7 @@ import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { NotificationBell } from "@/components/notifications/NotificationBell";
 import { ThemeToggle } from "@/components/theme/ThemeToggle";
 
-const Header = () => {
+const Header = React.forwardRef<HTMLElement>((_, ref) => {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const { user, profile, role, signOut } = useAuth();
   const navigate = useNavigate();
@@ -47,7 +47,7 @@ const Header = () => {
   };
 
   return (
-    <header className="sticky top-0 z-50 w-full border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
+    <header ref={ref} className="sticky top-0 z-50 w-full border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
       <div className="container flex h-16 items-center justify-between">
         <Link to="/" className="flex items-center gap-2">
           <Calendar className="h-6 w-6 text-primary" />
@@ -219,6 +219,7 @@ const Header = () => {
       )}
     </header>
   );
-};
+});
+Header.displayName = "Header";
 
 export default Header;
