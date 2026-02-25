@@ -1,6 +1,7 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import type { Json } from "@/integrations/supabase/types";
+import { useAuth } from "@/contexts/AuthContext";
 
 export interface CurrencySettings {
   code: string;
@@ -44,6 +45,14 @@ export const CURRENCY_OPTIONS: CurrencySettings[] = [
 
 export function useSystemSettings() {
   const queryClient = useQueryClient();
+  const { data: session } = useQuery({
+    queryKey: ["auth-session-for-settings"],
+    queryFn: async () => {
+      const { data } = await supabase.auth.getSession();
+      return data.session;
+    },
+    staleTime: 60 * 1000,
+  });
 
   const { data: settings, isLoading } = useQuery({
     queryKey: ["system-settings"],
@@ -78,6 +87,8 @@ export function useSystemSettings() {
 
   const updateSettingsMutation = useMutation({
     mutationFn: async (newSettings: SystemSettings) => {
+      // Guard: only admins can update settings
+      if (!session?.user?.id) throw new Error("Not authenticated");
       // Check if currency setting exists
       const { data: existingCurrency } = await supabase
         .from("system_settings")

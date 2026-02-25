@@ -54,7 +54,7 @@ export const useAdminData = () => {
         .from("appointments")
         .select("id, user_id, provider_id, appointment_date, start_time, end_time, status, notes, cancellation_reason, payment_status, payment_amount, is_video_consultation, created_at, updated_at")
         .order("created_at", { ascending: false })
-        .limit(100);
+        .limit(500);
 
       if (error) throw error;
       if (!data || data.length === 0) return [];

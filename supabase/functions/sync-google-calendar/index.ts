@@ -2,7 +2,7 @@ import { createClient } from "https://esm.sh/@supabase/supabase-js@2.57.2";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
-  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
+  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type, x-google-access-token, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version",
 };
 
 const logStep = (step: string, details?: unknown) => {
@@ -13,7 +13,7 @@ const logStep = (step: string, details?: unknown) => {
 interface CalendarRequest {
   appointment_id: string;
   action: "create" | "update" | "delete";
-  access_token: string;
+  access_token?: string; // deprecated: use X-Google-Access-Token header
   event_details?: {
     summary: string;
     description: string;
@@ -58,10 +58,13 @@ Deno.serve(async (req) => {
     }
 
     const body: CalendarRequest = await req.json();
-    const { action, access_token, event_details, event_id, appointment_id } = body;
+    const { action, event_details, event_id, appointment_id } = body;
+
+    // Prefer header over body for access_token (avoids logging PII)
+    const access_token = req.headers.get("x-google-access-token") || body.access_token;
 
     if (!access_token) {
-      return new Response(JSON.stringify({ error: "Google access token required" }), {
+      return new Response(JSON.stringify({ error: "Google access token required (use X-Google-Access-Token header)" }), {
         status: 400,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });

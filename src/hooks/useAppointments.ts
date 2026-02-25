@@ -190,7 +190,7 @@ export const useAppointments = () => {
           recurrence_end_date: input.recurrence_end_date || null,
           is_recurring_parent: isRecurring,
         })
-        .select()
+        .select("id, user_id, provider_id, appointment_date, start_time, end_time, status, notes, is_video_consultation, recurrence_pattern, recurrence_end_date, is_recurring_parent, created_at")
         .single();
 
       if (error) {
@@ -224,7 +224,11 @@ export const useAppointments = () => {
           }));
 
           // eslint-disable-next-line @typescript-eslint/no-explicit-any
-          await (supabase as any).from("appointments").insert(childInserts);
+          const { error: childError } = await (supabase as any).from("appointments").insert(childInserts);
+          if (childError) {
+            console.error("Failed to create recurring child appointments:", childError);
+            // Don't throw - parent was created successfully
+          }
         }
       }
 
@@ -308,7 +312,7 @@ export const useAppointments = () => {
           status: "pending", // Reset to pending for provider approval
         })
         .eq("id", input.id)
-        .select()
+        .select("id, user_id, provider_id, appointment_date, start_time, end_time, status")
         .single();
 
       if (error) {
@@ -454,10 +458,10 @@ export const useAvailableSlots = (providerId: string | undefined, date: Date | u
       const dayOfWeek = date.getDay();
       const formattedDate = date.toISOString().split("T")[0];
 
-      // Check if date is blocked - use public view (no reason column exposed)
+      // Check if date is blocked
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const { data: blockedDates } = await (supabase as any)
-        .from("provider_blocked_dates_public")
+        .from("provider_blocked_dates")
         .select("id")
         .eq("provider_id", providerId)
         .eq("blocked_date", formattedDate);
@@ -470,7 +474,7 @@ export const useAvailableSlots = (providerId: string | undefined, date: Date | u
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const { data: availability } = await (supabase as any)
         .from("provider_availability")
-        .select("*")
+        .select("id, provider_id, day_of_week, start_time, end_time, slot_duration, is_active")
         .eq("provider_id", providerId)
         .eq("day_of_week", dayOfWeek)
         .eq("is_active", true)
