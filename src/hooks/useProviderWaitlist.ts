@@ -84,11 +84,13 @@ export const useProviderWaitlist = () => {
   // Remove entry from waitlist (mark as inactive)
   const removeEntryMutation = useMutation({
     mutationFn: async (entryId: string) => {
+      if (!providerId) throw new Error("Provider not found");
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const { error } = await (supabase as any)
         .from("slot_waitlist")
         .update({ is_active: false })
-        .eq("id", entryId);
+        .eq("id", entryId)
+        .eq("provider_id", providerId);
 
       if (error) throw error;
     },

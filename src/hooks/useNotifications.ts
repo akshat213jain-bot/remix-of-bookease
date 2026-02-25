@@ -64,10 +64,12 @@ export const useNotifications = () => {
 
   const markAsReadMutation = useMutation({
     mutationFn: async (notificationId: string) => {
+      if (!user?.id) throw new Error("Not authenticated");
       const { error } = await supabase
         .from("notifications")
         .update({ is_read: true })
-        .eq("id", notificationId);
+        .eq("id", notificationId)
+        .eq("user_id", user.id);
 
       if (error) throw error;
     },
