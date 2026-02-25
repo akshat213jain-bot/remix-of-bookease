@@ -153,49 +153,43 @@ const AdminDashboard = () => {
         </div>
 
         <Tabs defaultValue="analytics" className="space-y-6">
-          <div className="overflow-x-auto -mx-4 px-4 scrollbar-hide" style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}>
-            <TabsList className="inline-flex w-max gap-0.5 bg-muted/50 p-0.5 rounded-md h-8">
-              <TabsTrigger value="analytics" className="text-xs px-2.5 py-1 h-7">
-                <BarChart3 className="h-3.5 w-3.5 mr-1" />
+          <div>
+            <TabsList className="flex w-full bg-muted/50 p-0.5 rounded-md h-8">
+              <TabsTrigger value="analytics" className="text-xs flex-1 px-1 py-1 h-7">
+                <BarChart3 className="h-3.5 w-3.5 mr-1 hidden sm:inline" />
                 Analytics
               </TabsTrigger>
-              <TabsTrigger value="approvals" className="text-xs px-2.5 py-1 h-7">
-                <Clock className="h-3.5 w-3.5 mr-1" />
+              <TabsTrigger value="approvals" className="text-xs flex-1 px-1 py-1 h-7">
                 Approvals
               </TabsTrigger>
-              <TabsTrigger value="providers" className="text-xs px-2.5 py-1 h-7">
-                Providers ({pendingProviders.length})
+              <TabsTrigger value="providers" className="text-xs flex-1 px-1 py-1 h-7">
+                Providers
               </TabsTrigger>
-              <TabsTrigger value="appointments" className="text-xs px-2.5 py-1 h-7">
-                Appointments ({appointments.length})
+              <TabsTrigger value="appointments" className="text-xs flex-1 px-1 py-1 h-7">
+                Appts
               </TabsTrigger>
-              <TabsTrigger value="payments" className="text-xs px-2.5 py-1 h-7">
-                <CreditCard className="h-3.5 w-3.5 mr-1" />
+              <TabsTrigger value="payments" className="text-xs flex-1 px-1 py-1 h-7">
                 Payments
               </TabsTrigger>
-              <TabsTrigger value="revenue" className="text-xs px-2.5 py-1 h-7">
+              <TabsTrigger value="revenue" className="text-xs flex-1 px-1 py-1 h-7">
                 Revenue
               </TabsTrigger>
-              <TabsTrigger value="users" className="text-xs px-2.5 py-1 h-7">
+              <TabsTrigger value="users" className="text-xs flex-1 px-1 py-1 h-7">
                 Users
               </TabsTrigger>
-              <TabsTrigger value="emails" className="text-xs px-2.5 py-1 h-7">
+              <TabsTrigger value="emails" className="text-xs flex-1 px-1 py-1 h-7">
                 Emails
               </TabsTrigger>
-              <TabsTrigger value="delivery" className="text-xs px-2.5 py-1 h-7">
-                <Mail className="h-3.5 w-3.5 mr-1" />
+              <TabsTrigger value="delivery" className="text-xs flex-1 px-1 py-1 h-7">
                 Delivery
               </TabsTrigger>
-              <TabsTrigger value="disputes" className="text-xs px-2.5 py-1 h-7">
-                <AlertTriangle className="h-3.5 w-3.5 mr-1" />
+              <TabsTrigger value="disputes" className="text-xs flex-1 px-1 py-1 h-7">
                 Disputes
               </TabsTrigger>
-              <TabsTrigger value="export" className="text-xs px-2.5 py-1 h-7">
-                <Database className="h-3.5 w-3.5 mr-1" />
+              <TabsTrigger value="export" className="text-xs flex-1 px-1 py-1 h-7">
                 Export
               </TabsTrigger>
-              <TabsTrigger value="settings" className="text-xs px-2.5 py-1 h-7">
-                <Settings className="h-3.5 w-3.5 mr-1" />
+              <TabsTrigger value="settings" className="text-xs flex-1 px-1 py-1 h-7">
                 Settings
               </TabsTrigger>
             </TabsList>
