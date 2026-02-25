@@ -133,6 +133,20 @@ export type Database = {
             referencedRelation: "provider_profiles"
             referencedColumns: ["id"]
           },
+          {
+            foreignKeyName: "appointments_provider_id_fkey"
+            columns: ["provider_id"]
+            isOneToOne: false
+            referencedRelation: "provider_profiles_public"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "appointments_provider_id_fkey"
+            columns: ["provider_id"]
+            isOneToOne: false
+            referencedRelation: "provider_public_info"
+            referencedColumns: ["provider_id"]
+          },
         ]
       }
       approval_requests: {
@@ -332,6 +346,20 @@ export type Database = {
             referencedRelation: "provider_profiles"
             referencedColumns: ["id"]
           },
+          {
+            foreignKeyName: "chat_conversations_provider_id_fkey"
+            columns: ["provider_id"]
+            isOneToOne: false
+            referencedRelation: "provider_profiles_public"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "chat_conversations_provider_id_fkey"
+            columns: ["provider_id"]
+            isOneToOne: false
+            referencedRelation: "provider_public_info"
+            referencedColumns: ["provider_id"]
+          },
         ]
       }
       chat_messages: {
@@ -471,6 +499,20 @@ export type Database = {
             referencedRelation: "provider_profiles"
             referencedColumns: ["id"]
           },
+          {
+            foreignKeyName: "coupons_provider_id_fkey"
+            columns: ["provider_id"]
+            isOneToOne: false
+            referencedRelation: "provider_profiles_public"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "coupons_provider_id_fkey"
+            columns: ["provider_id"]
+            isOneToOne: false
+            referencedRelation: "provider_public_info"
+            referencedColumns: ["provider_id"]
+          },
         ]
       }
       disputes: {
@@ -530,6 +572,20 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "provider_profiles"
             referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "disputes_provider_id_fkey"
+            columns: ["provider_id"]
+            isOneToOne: false
+            referencedRelation: "provider_profiles_public"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "disputes_provider_id_fkey"
+            columns: ["provider_id"]
+            isOneToOne: false
+            referencedRelation: "provider_public_info"
+            referencedColumns: ["provider_id"]
           },
         ]
       }
@@ -595,6 +651,20 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "provider_profiles"
             referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "favorite_providers_provider_id_fkey"
+            columns: ["provider_id"]
+            isOneToOne: false
+            referencedRelation: "provider_profiles_public"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "favorite_providers_provider_id_fkey"
+            columns: ["provider_id"]
+            isOneToOne: false
+            referencedRelation: "provider_public_info"
+            referencedColumns: ["provider_id"]
           },
         ]
       }
@@ -720,6 +790,20 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "provider_profiles"
             referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "group_discounts_provider_id_fkey"
+            columns: ["provider_id"]
+            isOneToOne: false
+            referencedRelation: "provider_profiles_public"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "group_discounts_provider_id_fkey"
+            columns: ["provider_id"]
+            isOneToOne: false
+            referencedRelation: "provider_public_info"
+            referencedColumns: ["provider_id"]
           },
         ]
       }
@@ -997,6 +1081,20 @@ export type Database = {
             referencedRelation: "provider_profiles"
             referencedColumns: ["id"]
           },
+          {
+            foreignKeyName: "provider_availability_provider_id_fkey"
+            columns: ["provider_id"]
+            isOneToOne: false
+            referencedRelation: "provider_profiles_public"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "provider_availability_provider_id_fkey"
+            columns: ["provider_id"]
+            isOneToOne: false
+            referencedRelation: "provider_public_info"
+            referencedColumns: ["provider_id"]
+          },
         ]
       }
       provider_blocked_dates: {
@@ -1028,6 +1126,20 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "provider_profiles"
             referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "provider_blocked_dates_provider_id_fkey"
+            columns: ["provider_id"]
+            isOneToOne: false
+            referencedRelation: "provider_profiles_public"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "provider_blocked_dates_provider_id_fkey"
+            columns: ["provider_id"]
+            isOneToOne: false
+            referencedRelation: "provider_public_info"
+            referencedColumns: ["provider_id"]
           },
         ]
       }
@@ -1248,6 +1360,20 @@ export type Database = {
             referencedRelation: "provider_profiles"
             referencedColumns: ["id"]
           },
+          {
+            foreignKeyName: "reviews_provider_id_fkey"
+            columns: ["provider_id"]
+            isOneToOne: false
+            referencedRelation: "provider_profiles_public"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "reviews_provider_id_fkey"
+            columns: ["provider_id"]
+            isOneToOne: false
+            referencedRelation: "provider_public_info"
+            referencedColumns: ["provider_id"]
+          },
         ]
       }
       satisfaction_surveys: {
@@ -1311,6 +1437,20 @@ export type Database = {
             referencedRelation: "provider_profiles"
             referencedColumns: ["id"]
           },
+          {
+            foreignKeyName: "satisfaction_surveys_provider_id_fkey"
+            columns: ["provider_id"]
+            isOneToOne: false
+            referencedRelation: "provider_profiles_public"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "satisfaction_surveys_provider_id_fkey"
+            columns: ["provider_id"]
+            isOneToOne: false
+            referencedRelation: "provider_public_info"
+            referencedColumns: ["provider_id"]
+          },
         ]
       }
       service_packages: {
@@ -1370,6 +1510,20 @@ export type Database = {
             referencedRelation: "provider_profiles"
             referencedColumns: ["id"]
           },
+          {
+            foreignKeyName: "service_packages_provider_id_fkey"
+            columns: ["provider_id"]
+            isOneToOne: false
+            referencedRelation: "provider_profiles_public"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "service_packages_provider_id_fkey"
+            columns: ["provider_id"]
+            isOneToOne: false
+            referencedRelation: "provider_public_info"
+            referencedColumns: ["provider_id"]
+          },
         ]
       }
       slot_waitlist: {
@@ -1422,6 +1576,20 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "provider_profiles"
             referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "slot_waitlist_provider_id_fkey"
+            columns: ["provider_id"]
+            isOneToOne: false
+            referencedRelation: "provider_profiles_public"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "slot_waitlist_provider_id_fkey"
+            columns: ["provider_id"]
+            isOneToOne: false
+            referencedRelation: "provider_public_info"
+            referencedColumns: ["provider_id"]
           },
         ]
       }
@@ -1534,6 +1702,20 @@ export type Database = {
             referencedRelation: "provider_profiles"
             referencedColumns: ["id"]
           },
+          {
+            foreignKeyName: "tips_provider_id_fkey"
+            columns: ["provider_id"]
+            isOneToOne: false
+            referencedRelation: "provider_profiles_public"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "tips_provider_id_fkey"
+            columns: ["provider_id"]
+            isOneToOne: false
+            referencedRelation: "provider_public_info"
+            referencedColumns: ["provider_id"]
+          },
         ]
       }
       user_analytics: {
@@ -1583,6 +1765,20 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "provider_profiles"
             referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "user_analytics_favorite_provider_id_fkey"
+            columns: ["favorite_provider_id"]
+            isOneToOne: false
+            referencedRelation: "provider_profiles_public"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "user_analytics_favorite_provider_id_fkey"
+            columns: ["favorite_provider_id"]
+            isOneToOne: false
+            referencedRelation: "provider_public_info"
+            referencedColumns: ["provider_id"]
           },
         ]
       }
@@ -1726,7 +1922,152 @@ export type Database = {
       }
     }
     Views: {
-      [_ in never]: never
+      provider_profiles_public: {
+        Row: {
+          average_rating: number | null
+          bio: string | null
+          buffer_time_after: number | null
+          buffer_time_before: number | null
+          consultation_fee: number | null
+          created_at: string | null
+          id: string | null
+          is_active: boolean | null
+          is_approved: boolean | null
+          is_verified: boolean | null
+          location: string | null
+          profession: string | null
+          require_video_payment: boolean | null
+          specialty: string | null
+          timezone: string | null
+          total_reviews: number | null
+          user_id: string | null
+          video_consultation_fee: number | null
+          video_enabled: boolean | null
+          years_of_experience: number | null
+        }
+        Insert: {
+          average_rating?: number | null
+          bio?: string | null
+          buffer_time_after?: number | null
+          buffer_time_before?: number | null
+          consultation_fee?: number | null
+          created_at?: string | null
+          id?: string | null
+          is_active?: boolean | null
+          is_approved?: boolean | null
+          is_verified?: boolean | null
+          location?: string | null
+          profession?: string | null
+          require_video_payment?: boolean | null
+          specialty?: string | null
+          timezone?: string | null
+          total_reviews?: number | null
+          user_id?: string | null
+          video_consultation_fee?: number | null
+          video_enabled?: boolean | null
+          years_of_experience?: number | null
+        }
+        Update: {
+          average_rating?: number | null
+          bio?: string | null
+          buffer_time_after?: number | null
+          buffer_time_before?: number | null
+          consultation_fee?: number | null
+          created_at?: string | null
+          id?: string | null
+          is_active?: boolean | null
+          is_approved?: boolean | null
+          is_verified?: boolean | null
+          location?: string | null
+          profession?: string | null
+          require_video_payment?: boolean | null
+          specialty?: string | null
+          timezone?: string | null
+          total_reviews?: number | null
+          user_id?: string | null
+          video_consultation_fee?: number | null
+          video_enabled?: boolean | null
+          years_of_experience?: number | null
+        }
+        Relationships: []
+      }
+      provider_public_info: {
+        Row: {
+          avatar_url: string | null
+          average_rating: number | null
+          bio: string | null
+          city: string | null
+          consultation_fee: number | null
+          country: string | null
+          full_name: string | null
+          is_verified: boolean | null
+          location: string | null
+          profession: string | null
+          provider_id: string | null
+          specialty: string | null
+          total_reviews: number | null
+          user_id: string | null
+          video_consultation_fee: number | null
+          video_enabled: boolean | null
+          years_of_experience: number | null
+        }
+        Relationships: []
+      }
+      reviews_public: {
+        Row: {
+          created_at: string | null
+          id: string | null
+          is_visible: boolean | null
+          provider_id: string | null
+          provider_response: string | null
+          provider_response_at: string | null
+          rating: number | null
+          review_text: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          id?: string | null
+          is_visible?: boolean | null
+          provider_id?: string | null
+          provider_response?: string | null
+          provider_response_at?: string | null
+          rating?: number | null
+          review_text?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          id?: string | null
+          is_visible?: boolean | null
+          provider_id?: string | null
+          provider_response?: string | null
+          provider_response_at?: string | null
+          rating?: number | null
+          review_text?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "reviews_provider_id_fkey"
+            columns: ["provider_id"]
+            isOneToOne: false
+            referencedRelation: "provider_profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "reviews_provider_id_fkey"
+            columns: ["provider_id"]
+            isOneToOne: false
+            referencedRelation: "provider_profiles_public"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "reviews_provider_id_fkey"
+            columns: ["provider_id"]
+            isOneToOne: false
+            referencedRelation: "provider_public_info"
+            referencedColumns: ["provider_id"]
+          },
+        ]
+      }
     }
     Functions: {
       get_user_role: {
