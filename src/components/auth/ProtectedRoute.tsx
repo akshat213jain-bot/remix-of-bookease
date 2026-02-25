@@ -1,4 +1,4 @@
-import { ReactNode } from "react";
+import React, { ReactNode } from "react";
 import { Navigate, useLocation } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
 import LoadingScreen from "@/components/ui/LoadingScreen";
@@ -11,11 +11,11 @@ interface ProtectedRouteProps {
   allowedRoles?: AppRole[];
 }
 
-const ProtectedRoute = ({ children, allowedRoles }: ProtectedRouteProps) => {
+const ProtectedRoute = React.forwardRef<HTMLDivElement, ProtectedRouteProps>(
+  ({ children, allowedRoles }, ref) => {
   const { user, role, isLoading, isBlocked } = useAuth();
   const location = useLocation();
 
-  // Ensure loading screen shows for at least 2 seconds
   const showLoading = useMinLoadingTime(isLoading, 2000);
 
   if (showLoading) {
@@ -23,17 +23,14 @@ const ProtectedRoute = ({ children, allowedRoles }: ProtectedRouteProps) => {
   }
 
   if (!user) {
-    // Redirect to login with return URL
     return <Navigate to="/auth" state={{ from: location }} replace />;
   }
 
-  // If user is blocked (suspended/banned), redirect to blocked account page
   if (isBlocked && location.pathname !== "/blocked") {
     return <Navigate to="/blocked" replace />;
   }
 
   if (allowedRoles && role && !allowedRoles.includes(role)) {
-    // User doesn't have required role, redirect to appropriate dashboard
     const redirectPath = role === "admin"
       ? "/dashboard/admin"
       : role === "provider"
@@ -43,7 +40,8 @@ const ProtectedRoute = ({ children, allowedRoles }: ProtectedRouteProps) => {
     return <Navigate to={redirectPath} replace />;
   }
 
-  return <>{children}</>;
-};
+  return <div ref={ref}>{children}</div>;
+});
+ProtectedRoute.displayName = "ProtectedRoute";
 
 export default ProtectedRoute;

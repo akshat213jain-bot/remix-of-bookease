@@ -1,4 +1,4 @@
-import { createContext, useContext, useEffect, useState, ReactNode } from "react";
+import React, { createContext, useContext, useEffect, useState, ReactNode } from "react";
 import { User, Session } from "@supabase/supabase-js";
 import { supabase } from "@/integrations/supabase/client";
 import { useNavigate } from "react-router-dom";
@@ -39,7 +39,8 @@ export const useAuth = () => {
   return context;
 };
 
-export const AuthProvider = ({ children }: { children: ReactNode }) => {
+export const AuthProvider = React.forwardRef<HTMLDivElement, { children: ReactNode }>(
+  ({ children }, ref) => {
   const [user, setUser] = useState<User | null>(null);
   const [session, setSession] = useState<Session | null>(null);
   const [profile, setProfile] = useState<Profile | null>(null);
@@ -64,7 +65,6 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       if (profileData) {
         setProfile(profileData as Profile);
         
-        // Check if user is suspended or banned - but allow them to stay logged in
         if (profileData.status === "suspended" || profileData.status === "banned") {
           setIsBlocked(true);
         } else {
@@ -72,7 +72,6 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         }
       }
 
-      // Fetch role using the database function
       const { data: roleData, error: roleError } = await supabase
         .rpc("get_user_role", { _user_id: userId });
 
@@ -92,13 +91,11 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   };
 
   useEffect(() => {
-    // Set up auth state listener FIRST
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       (event, session) => {
         setSession(session);
         setUser(session?.user ?? null);
 
-        // Defer profile fetch to avoid deadlock
         if (session?.user) {
           setTimeout(() => {
             fetchProfile(session.user.id);
@@ -115,7 +112,6 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       }
     );
 
-    // THEN check for existing session
     supabase.auth.getSession().then(({ data: { session } }) => {
       setSession(session);
       setUser(session?.user ?? null);
@@ -175,7 +171,6 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         return { error };
       }
 
-      // Check if user is suspended or banned - but allow login
       if (data.user) {
         const { data: profileData, error: profileError } = await supabase
           .from("profiles")
@@ -188,7 +183,6 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         }
 
         if (profileData && (profileData.status === "suspended" || profileData.status === "banned")) {
-          // Set blocked state - user will be redirected to blocked page
           setIsBlocked(true);
         }
       }
@@ -220,5 +214,10 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     signOut,
   };
 
-  return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
-};
+  return (
+    <AuthContext.Provider value={value}>
+      <div ref={ref}>{children}</div>
+    </AuthContext.Provider>
+  );
+});
+AuthProvider.displayName = "AuthProvider";
