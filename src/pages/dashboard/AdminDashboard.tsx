@@ -153,49 +153,49 @@ const AdminDashboard = () => {
         </div>
 
         <Tabs defaultValue="analytics" className="space-y-6">
-          <div className="overflow-x-auto -mx-4 px-4 pb-1 scrollbar-hide" style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}>
-            <TabsList className="inline-flex w-max gap-1 bg-muted/60 p-1 rounded-lg">
-              <TabsTrigger value="analytics" className="text-xs sm:text-sm">
-                <BarChart3 className="h-4 w-4 mr-1.5" />
+          <div className="overflow-x-auto -mx-4 px-4 scrollbar-hide" style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}>
+            <TabsList className="inline-flex w-max gap-0.5 bg-muted/50 p-0.5 rounded-md h-8">
+              <TabsTrigger value="analytics" className="text-xs px-2.5 py-1 h-7">
+                <BarChart3 className="h-3.5 w-3.5 mr-1" />
                 Analytics
               </TabsTrigger>
-              <TabsTrigger value="approvals" className="text-xs sm:text-sm">
-                <Clock className="h-4 w-4 mr-1.5" />
+              <TabsTrigger value="approvals" className="text-xs px-2.5 py-1 h-7">
+                <Clock className="h-3.5 w-3.5 mr-1" />
                 Approvals
               </TabsTrigger>
-              <TabsTrigger value="providers" className="text-xs sm:text-sm">
-                Provider Approvals ({pendingProviders.length})
+              <TabsTrigger value="providers" className="text-xs px-2.5 py-1 h-7">
+                Providers ({pendingProviders.length})
               </TabsTrigger>
-              <TabsTrigger value="appointments" className="text-xs sm:text-sm">
+              <TabsTrigger value="appointments" className="text-xs px-2.5 py-1 h-7">
                 Appointments ({appointments.length})
               </TabsTrigger>
-              <TabsTrigger value="payments" className="text-xs sm:text-sm">
-                <CreditCard className="h-4 w-4 mr-1.5" />
+              <TabsTrigger value="payments" className="text-xs px-2.5 py-1 h-7">
+                <CreditCard className="h-3.5 w-3.5 mr-1" />
                 Payments
               </TabsTrigger>
-              <TabsTrigger value="revenue" className="text-xs sm:text-sm">
+              <TabsTrigger value="revenue" className="text-xs px-2.5 py-1 h-7">
                 Revenue
               </TabsTrigger>
-              <TabsTrigger value="users" className="text-xs sm:text-sm">
+              <TabsTrigger value="users" className="text-xs px-2.5 py-1 h-7">
                 Users
               </TabsTrigger>
-              <TabsTrigger value="emails" className="text-xs sm:text-sm">
-                Email Templates
+              <TabsTrigger value="emails" className="text-xs px-2.5 py-1 h-7">
+                Emails
               </TabsTrigger>
-              <TabsTrigger value="delivery" className="text-xs sm:text-sm">
-                <Mail className="h-4 w-4 mr-1.5" />
+              <TabsTrigger value="delivery" className="text-xs px-2.5 py-1 h-7">
+                <Mail className="h-3.5 w-3.5 mr-1" />
                 Delivery
               </TabsTrigger>
-              <TabsTrigger value="disputes" className="text-xs sm:text-sm">
-                <AlertTriangle className="h-4 w-4 mr-1.5" />
+              <TabsTrigger value="disputes" className="text-xs px-2.5 py-1 h-7">
+                <AlertTriangle className="h-3.5 w-3.5 mr-1" />
                 Disputes
               </TabsTrigger>
-              <TabsTrigger value="export" className="text-xs sm:text-sm">
-                <Database className="h-4 w-4 mr-1.5" />
+              <TabsTrigger value="export" className="text-xs px-2.5 py-1 h-7">
+                <Database className="h-3.5 w-3.5 mr-1" />
                 Export
               </TabsTrigger>
-              <TabsTrigger value="settings" className="text-xs sm:text-sm">
-                <Settings className="h-4 w-4 mr-1.5" />
+              <TabsTrigger value="settings" className="text-xs px-2.5 py-1 h-7">
+                <Settings className="h-3.5 w-3.5 mr-1" />
                 Settings
               </TabsTrigger>
             </TabsList>
