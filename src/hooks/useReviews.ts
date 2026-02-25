@@ -56,7 +56,8 @@ export const useUserReviews = () => {
         .from("reviews")
         .select("id, user_id, provider_id, appointment_id, rating, review_text, is_visible, provider_response, provider_response_at, created_at, updated_at")
         .eq("user_id", user.id)
-        .order("created_at", { ascending: false });
+        .order("created_at", { ascending: false })
+        .limit(200);
 
       if (error) throw error;
       return data || [];
@@ -131,7 +132,8 @@ export const useProviderReviews = () => {
         .from("reviews")
         .select("id, user_id, provider_id, appointment_id, rating, review_text, is_visible, provider_response, provider_response_at, created_at, updated_at")
         .eq("provider_id", providerId)
-        .order("created_at", { ascending: false });
+        .order("created_at", { ascending: false })
+        .limit(200);
 
       if (error) throw error;
 

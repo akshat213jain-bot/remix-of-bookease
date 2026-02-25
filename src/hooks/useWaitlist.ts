@@ -98,11 +98,13 @@ export const useWaitlist = (providerId?: string) => {
 
   const leaveMutation = useMutation({
     mutationFn: async (waitlistId: string) => {
+      if (!user?.id) throw new Error("Not authenticated");
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const { error } = await (supabase as any)
         .from("slot_waitlist")
         .update({ is_active: false })
-        .eq("id", waitlistId);
+        .eq("id", waitlistId)
+        .eq("user_id", user.id);
 
       if (error) throw error;
     },

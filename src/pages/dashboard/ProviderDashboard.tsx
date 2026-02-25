@@ -135,8 +135,7 @@ const ProviderDashboard = () => {
   // Get appointments with pending reschedule requests from patients
   const rescheduleRequests = appointments.filter(a =>
     a.reschedule_requested_by === "user" &&
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    (a as any).proposed_date
+    a.proposed_date
   );
 
   // Calculate stats
@@ -144,8 +143,7 @@ const ProviderDashboard = () => {
   const completedCount = appointments.filter(a => a.status === "completed").length;
   const totalPatients = new Set(appointments.map(a => a.user_id)).size;
   const videoAppointments = appointments.filter(a =>
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    (a as any).is_video_consultation && a.status === "approved"
+    a.is_video_consultation && a.status === "approved"
   );
 
   const stats = [
@@ -393,14 +391,10 @@ const ProviderDashboard = () => {
                       appointmentId={appointment.id}
                       currentDate={appointment.appointment_date}
                       currentTime={appointment.start_time}
-                      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-                      proposedDate={(appointment as any).proposed_date}
-                      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-                      proposedStartTime={(appointment as any).proposed_start_time}
-                      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-                      proposedEndTime={(appointment as any).proposed_end_time}
-                      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-                      reason={(appointment as any).reschedule_reason}
+                      proposedDate={appointment.proposed_date}
+                      proposedStartTime={appointment.proposed_start_time}
+                      proposedEndTime={appointment.proposed_end_time}
+                      reason={appointment.reschedule_reason}
                       requestedBy="user"
                       patientName={appointment.user_profile?.full_name}
                       patientAvatar={appointment.user_profile?.avatar_url}
@@ -431,8 +425,7 @@ const ProviderDashboard = () => {
                     ) : (
                       <div className="space-y-4">
                         {todayAppointments.map((appointment) => {
-                          // eslint-disable-next-line @typescript-eslint/no-explicit-any
-                          const isVideoAppointment = (appointment as any).is_video_consultation;
+                          const isVideoAppointment = appointment.is_video_consultation;
 
                           return (
                             <div
@@ -558,8 +551,7 @@ const ProviderDashboard = () => {
                     ) : (
                       <div className="space-y-4">
                         {upcomingAppointments.slice(0, 10).map((appointment) => {
-                          // eslint-disable-next-line @typescript-eslint/no-explicit-any
-                          const isVideoAppointment = (appointment as any).is_video_consultation;
+                          const isVideoAppointment = appointment.is_video_consultation;
                           const appointmentDate = parseISO(appointment.appointment_date);
                           const isToday = format(appointmentDate, "yyyy-MM-dd") === format(new Date(), "yyyy-MM-dd");
 
