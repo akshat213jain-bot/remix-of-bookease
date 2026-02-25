@@ -43,7 +43,7 @@ export const useProviderAvailability = () => {
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const { data, error } = await (supabase as any)
         .from("provider_availability")
-        .select("*")
+        .select("id, provider_id, day_of_week, start_time, end_time, slot_duration, is_active")
         .eq("provider_id", providerId)
         .order("day_of_week");
 
@@ -62,7 +62,7 @@ export const useProviderAvailability = () => {
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const { data, error } = await (supabase as any)
         .from("provider_blocked_dates")
-        .select("*")
+        .select("id, provider_id, blocked_date, reason")
         .eq("provider_id", providerId)
         .gte("blocked_date", new Date().toISOString().split("T")[0])
         .order("blocked_date");

@@ -450,10 +450,10 @@ export const useAvailableSlots = (providerId: string | undefined, date: Date | u
       const dayOfWeek = date.getDay();
       const formattedDate = date.toISOString().split("T")[0];
 
-      // Check if date is blocked
+      // Check if date is blocked - use public view (no reason column exposed)
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const { data: blockedDates } = await (supabase as any)
-        .from("provider_blocked_dates")
+        .from("provider_blocked_dates_public")
         .select("id")
         .eq("provider_id", providerId)
         .eq("blocked_date", formattedDate);

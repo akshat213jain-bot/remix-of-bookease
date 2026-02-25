@@ -1,4 +1,5 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 
@@ -17,6 +18,31 @@ export const useNotifications = () => {
   const { user } = useAuth();
   const queryClient = useQueryClient();
 
+  // Subscribe to realtime notifications instead of polling
+  useEffect(() => {
+    if (!user?.id) return;
+
+    const channel = supabase
+      .channel(`notifications-${user.id}`)
+      .on(
+        'postgres_changes',
+        {
+          event: 'INSERT',
+          schema: 'public',
+          table: 'notifications',
+          filter: `user_id=eq.${user.id}`,
+        },
+        () => {
+          queryClient.invalidateQueries({ queryKey: ["notifications", user.id] });
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [user?.id, queryClient]);
+
   const notificationsQuery = useQuery({
     queryKey: ["notifications", user?.id],
     queryFn: async (): Promise<Notification[]> => {
@@ -24,17 +50,16 @@ export const useNotifications = () => {
 
       const { data, error } = await supabase
         .from("notifications")
-        .select("*")
+        .select("id, user_id, title, message, type, is_read, related_appointment_id, created_at")
         .eq("user_id", user.id)
         .order("created_at", { ascending: false })
-        .limit(50); // Limit for performance
+        .limit(50);
 
       if (error) throw error;
       return data || [];
     },
     enabled: !!user?.id,
-    staleTime: 30 * 1000, // 30 seconds cache
-    refetchInterval: 60 * 1000, // Refetch every minute
+    staleTime: 30 * 1000,
   });
 
   const markAsReadMutation = useMutation({
