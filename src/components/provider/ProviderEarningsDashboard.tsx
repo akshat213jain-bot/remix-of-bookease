@@ -226,7 +226,7 @@ export const ProviderEarningsDashboard = () => {
                       />
                       <YAxis
                         tick={{ fontSize: 12 }}
-                        tickFormatter={(value) => `$${(value / 100).toFixed(0)}`}
+                        tickFormatter={(value) => formatCurrency(value)}
                         className="text-muted-foreground"
                       />
                       <Tooltip

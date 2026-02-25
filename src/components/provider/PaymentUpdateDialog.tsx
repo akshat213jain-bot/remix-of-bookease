@@ -12,7 +12,9 @@ import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Badge } from "@/components/ui/badge";
-import { Loader2, IndianRupee, CreditCard, Smartphone, Banknote } from "lucide-react";
+import { Loader2, CreditCard, Smartphone, Banknote, Wallet } from "lucide-react";
+import { useCurrencySettings } from "@/hooks/useSystemSettings";
+import { formatCurrencyValue, getCurrencySymbol } from "@/lib/currency";
 
 interface PaymentUpdateDialogProps {
     open: boolean;
@@ -48,6 +50,7 @@ export const PaymentUpdateDialog = ({
     onUpdate,
     isUpdating,
 }: PaymentUpdateDialogProps) => {
+    const currency = useCurrencySettings();
     const [paymentStatus, setPaymentStatus] = useState<"paid" | "unpaid">(
         currentPaymentStatus === "paid" ? "paid" : "unpaid"
     );
@@ -80,7 +83,7 @@ export const PaymentUpdateDialog = ({
             <DialogContent className="sm:max-w-md">
                 <DialogHeader>
                     <DialogTitle className="flex items-center gap-2">
-                        <IndianRupee className="h-5 w-5 text-primary" />
+                        <Wallet className="h-5 w-5 text-primary" />
                         Update Payment
                     </DialogTitle>
                     <DialogDescription>
@@ -147,7 +150,7 @@ export const PaymentUpdateDialog = ({
                                     Amount (Optional)
                                 </Label>
                                 <div className="relative">
-                                    <IndianRupee className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                                    <span className="absolute left-3 top-1/2 -translate-y-1/2 text-sm text-muted-foreground">{getCurrencySymbol(currency)}</span>
                                     <Input
                                         id="amount"
                                         type="number"
@@ -178,7 +181,7 @@ export const PaymentUpdateDialog = ({
                             )}
                             {paymentStatus === "paid" && paymentAmount && (
                                 <Badge variant="secondary">
-                                    ₹{parseInt(paymentAmount).toLocaleString("en-IN")}
+                                    {formatCurrencyValue(parseInt(paymentAmount), currency)}
                                 </Badge>
                             )}
                         </div>

@@ -32,7 +32,8 @@ export const usePaymentHistory = () => {
         .select("id, appointment_date, start_time, end_time, payment_status, payment_amount, payment_date, payment_method, provider_id, status, is_video_consultation")
         .eq("user_id", user.id)
         .not("payment_amount", "is", null)
-        .order("payment_date", { ascending: false, nullsFirst: false });
+        .order("payment_date", { ascending: false, nullsFirst: false })
+        .limit(200);
 
       if (error) throw error;
       if (!appointments || appointments.length === 0) return [];
