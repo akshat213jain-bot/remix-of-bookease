@@ -52,7 +52,7 @@ export const useAdminData = () => {
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const { data, error } = await (supabase as any)
         .from("appointments")
-        .select("*")
+        .select("id, user_id, provider_id, appointment_date, start_time, end_time, status, notes, cancellation_reason, payment_status, payment_amount, is_video_consultation, created_at, updated_at")
         .order("created_at", { ascending: false })
         .limit(100);
 
@@ -123,9 +123,9 @@ export const useAdminData = () => {
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const { data, error } = await (supabase as any)
         .from("provider_profiles")
-        .select("*")
+        .select("id, user_id, profession, specialty, is_approved, is_active, created_at")
         .eq("is_approved", false)
-        .eq("is_active", true) // Only show active providers (not rejected ones)
+        .eq("is_active", true)
         .order("created_at", { ascending: false });
 
       if (error) throw error;

@@ -1922,6 +1922,46 @@ export type Database = {
       }
     }
     Views: {
+      provider_blocked_dates_public: {
+        Row: {
+          blocked_date: string | null
+          id: string | null
+          provider_id: string | null
+        }
+        Insert: {
+          blocked_date?: string | null
+          id?: string | null
+          provider_id?: string | null
+        }
+        Update: {
+          blocked_date?: string | null
+          id?: string | null
+          provider_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "provider_blocked_dates_provider_id_fkey"
+            columns: ["provider_id"]
+            isOneToOne: false
+            referencedRelation: "provider_profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "provider_blocked_dates_provider_id_fkey"
+            columns: ["provider_id"]
+            isOneToOne: false
+            referencedRelation: "provider_profiles_public"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "provider_blocked_dates_provider_id_fkey"
+            columns: ["provider_id"]
+            isOneToOne: false
+            referencedRelation: "provider_public_info"
+            referencedColumns: ["provider_id"]
+          },
+        ]
+      }
       provider_profiles_public: {
         Row: {
           average_rating: number | null

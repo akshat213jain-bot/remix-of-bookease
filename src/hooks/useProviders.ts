@@ -14,10 +14,12 @@ export interface Provider {
   is_active: boolean;
   average_rating: number | null;
   total_reviews: number | null;
+  video_enabled: boolean | null;
+  video_consultation_fee: number | null;
+  is_verified: boolean | null;
   profile?: {
     full_name: string;
     avatar_url: string | null;
-    email: string;
   };
 }
 
@@ -33,6 +35,29 @@ const categoryToProfessionPatterns: Record<string, string[]> = {
   stylist: ["stylist", "fashion", "makeup", "beauty", "cosmetologist", "aesthetician"],
 };
 
+// Helper to map provider_public_info rows to Provider shape
+const mapPublicInfoToProvider = (row: Record<string, unknown>): Provider => ({
+  id: row.provider_id as string,
+  user_id: row.user_id as string,
+  profession: row.profession as string,
+  specialty: (row.specialty as string) || null,
+  bio: (row.bio as string) || null,
+  consultation_fee: (row.consultation_fee as number) || null,
+  location: (row.location as string) || null,
+  years_of_experience: (row.years_of_experience as number) || null,
+  is_approved: true,
+  is_active: true,
+  average_rating: (row.average_rating as number) || null,
+  total_reviews: (row.total_reviews as number) || null,
+  video_enabled: (row.video_enabled as boolean) || null,
+  video_consultation_fee: (row.video_consultation_fee as number) || null,
+  is_verified: (row.is_verified as boolean) || null,
+  profile: {
+    full_name: (row.full_name as string) || "",
+    avatar_url: (row.avatar_url as string) || null,
+  },
+});
+
 export const useProviders = (category?: string, searchQuery?: string) => {
   return useQuery({
     queryKey: ["providers", category, searchQuery],
@@ -42,41 +67,23 @@ export const useProviders = (category?: string, searchQuery?: string) => {
         return [];
       }
 
+      // Use the secure public view instead of raw tables
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      let query = (supabase as any)
-        .from("provider_profiles")
-        .select("*")
-        .eq("is_approved", true)
-        .eq("is_active", true);
-
-      // Don't apply category filter in the query - we'll filter client-side for flexibility
-      const { data, error } = await query;
+      const { data, error } = await (supabase as any)
+        .from("provider_public_info")
+        .select("*");
 
       if (error) throw error;
-
       if (!data || data.length === 0) return [];
 
-      // Fetch profile info for all providers
-      const userIds = data.map((p: Provider) => p.user_id);
-      const { data: profiles } = await supabase
-        .from("profiles")
-        .select("user_id, full_name, avatar_url, email")
-        .in("user_id", userIds);
-
-      if (profiles) {
-        const profileMap = new Map(profiles.map(p => [p.user_id, p]));
-        data.forEach((provider: Provider) => {
-          provider.profile = profileMap.get(provider.user_id);
-        });
-      }
-
-      let filteredData = data;
+      // Map to Provider shape
+      let providers: Provider[] = data.map(mapPublicInfoToProvider);
 
       // Filter by category if provided
       if (category && category !== "all") {
         const patterns = categoryToProfessionPatterns[category.toLowerCase()];
         if (patterns) {
-          filteredData = filteredData.filter((provider: Provider) => {
+          providers = providers.filter((provider: Provider) => {
             const profession = provider.profession?.toLowerCase() || "";
             const specialty = provider.specialty?.toLowerCase() || "";
             return patterns.some(pattern =>
@@ -84,9 +91,8 @@ export const useProviders = (category?: string, searchQuery?: string) => {
             );
           });
         } else {
-          // Fallback to exact or partial match
           const lowerCategory = category.toLowerCase();
-          filteredData = filteredData.filter((provider: Provider) =>
+          providers = providers.filter((provider: Provider) =>
             provider.profession?.toLowerCase().includes(lowerCategory) ||
             provider.specialty?.toLowerCase().includes(lowerCategory)
           );
@@ -96,16 +102,16 @@ export const useProviders = (category?: string, searchQuery?: string) => {
       // Filter by search query if provided
       if (searchQuery) {
         const lowerQuery = searchQuery.toLowerCase();
-        filteredData = filteredData.filter((provider: Provider) =>
+        providers = providers.filter((provider: Provider) =>
           provider.profile?.full_name?.toLowerCase().includes(lowerQuery) ||
           provider.profession?.toLowerCase().includes(lowerQuery) ||
           provider.specialty?.toLowerCase().includes(lowerQuery)
         );
       }
 
-      return filteredData;
+      return providers;
     },
-    staleTime: 60 * 1000, // Cache for 1 minute
+    staleTime: 60 * 1000,
   });
 };
 
@@ -116,12 +122,9 @@ export const useProvidersPaginated = (category?: string, searchQuery?: string) =
     queryFn: async ({ pageParam = 0 }): Promise<{ providers: Provider[]; nextPage: number | null }> => {
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       let query = (supabase as any)
-        .from("provider_profiles")
+        .from("provider_public_info")
         .select("*", { count: "exact" })
-        .eq("is_approved", true)
-        .eq("is_active", true)
-        .range(pageParam * PAGE_SIZE, (pageParam + 1) * PAGE_SIZE - 1)
-        .order("created_at", { ascending: false });
+        .range(pageParam * PAGE_SIZE, (pageParam + 1) * PAGE_SIZE - 1);
 
       if (category && category !== "all") {
         query = query.eq("profession", category);
@@ -135,25 +138,12 @@ export const useProvidersPaginated = (category?: string, searchQuery?: string) =
         return { providers: [], nextPage: null };
       }
 
-      // Fetch profile info for all providers
-      const userIds = data.map((p: Provider) => p.user_id);
-      const { data: profiles } = await supabase
-        .from("profiles")
-        .select("user_id, full_name, avatar_url, email")
-        .in("user_id", userIds);
-
-      if (profiles) {
-        const profileMap = new Map(profiles.map(p => [p.user_id, p]));
-        data.forEach((provider: Provider) => {
-          provider.profile = profileMap.get(provider.user_id);
-        });
-      }
+      let providers: Provider[] = data.map(mapPublicInfoToProvider);
 
       // Filter by search query if provided (client-side for paginated)
-      let filteredData = data;
       if (searchQuery) {
         const lowerQuery = searchQuery.toLowerCase();
-        filteredData = data.filter((provider: Provider) =>
+        providers = providers.filter((provider: Provider) =>
           provider.profile?.full_name?.toLowerCase().includes(lowerQuery) ||
           provider.profession?.toLowerCase().includes(lowerQuery) ||
           provider.specialty?.toLowerCase().includes(lowerQuery)
@@ -163,7 +153,7 @@ export const useProvidersPaginated = (category?: string, searchQuery?: string) =
       const hasMore = count ? (pageParam + 1) * PAGE_SIZE < count : false;
 
       return {
-        providers: filteredData,
+        providers,
         nextPage: hasMore ? pageParam + 1 : null,
       };
     },
@@ -179,30 +169,18 @@ export const useProvider = (providerId: string | undefined) => {
     queryFn: async (): Promise<Provider | null> => {
       if (!providerId) return null;
 
+      // Use the secure public view
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const { data, error } = await (supabase as any)
-        .from("provider_profiles")
+        .from("provider_public_info")
         .select("*")
-        .eq("id", providerId)
-        .eq("is_approved", true) // Only show approved providers
-        .eq("is_active", true)   // Only show active providers
+        .eq("provider_id", providerId)
         .maybeSingle();
 
       if (error) throw error;
       if (!data) return null;
 
-      // Fetch profile info
-      const { data: profile } = await supabase
-        .from("profiles")
-        .select("user_id, full_name, avatar_url, email")
-        .eq("user_id", data.user_id)
-        .maybeSingle();
-
-      if (profile) {
-        data.profile = profile;
-      }
-
-      return data;
+      return mapPublicInfoToProvider(data);
     },
     enabled: !!providerId,
     staleTime: 60 * 1000,
