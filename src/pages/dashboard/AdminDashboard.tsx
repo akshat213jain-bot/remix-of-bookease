@@ -121,12 +121,12 @@ const AdminDashboard = () => {
 
   return (
     <Layout showFooter={false}>
-      <div className="container py-8">
+      <div className="container py-8 space-y-8">
         {/* Header */}
-        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-8">
+        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
           <div>
-            <h1 className="text-2xl font-bold">Admin Dashboard</h1>
-            <p className="text-muted-foreground">System overview and management</p>
+            <h1 className="text-2xl font-bold tracking-tight">Admin Dashboard</h1>
+            <p className="text-muted-foreground text-sm">System overview and management</p>
           </div>
           <Button variant="outline" size="icon">
             <Settings className="h-4 w-4" />
@@ -134,70 +134,72 @@ const AdminDashboard = () => {
         </div>
 
         {/* Stats Grid */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
           {statCards.map((stat) => (
-            <Card key={stat.label}>
-              <CardContent className="p-6">
-                <div className="flex items-center justify-between mb-4">
-                  <div className="w-10 h-10 rounded-full bg-muted flex items-center justify-center">
+            <Card key={stat.label} className="hover:shadow-md transition-shadow">
+              <CardContent className="p-5">
+                <div className="flex items-center justify-between mb-3">
+                  <div className="w-10 h-10 rounded-lg bg-muted flex items-center justify-center">
                     <stat.icon className={`h-5 w-5 ${stat.color}`} />
                   </div>
-                  <TrendingUp className="h-4 w-4 text-primary" />
+                  <TrendingUp className="h-4 w-4 text-muted-foreground" />
                 </div>
-                <p className="text-2xl font-bold">{stat.value}</p>
-                <p className="text-sm text-muted-foreground">{stat.label}</p>
-                <p className="text-xs text-muted-foreground mt-1">{stat.trend}</p>
+                <p className="text-2xl font-bold tracking-tight">{stat.value}</p>
+                <p className="text-sm font-medium text-foreground/80">{stat.label}</p>
+                <p className="text-xs text-muted-foreground mt-0.5">{stat.trend}</p>
               </CardContent>
             </Card>
           ))}
         </div>
 
         <Tabs defaultValue="analytics" className="space-y-6">
-          <TabsList className="flex-wrap h-auto gap-1">
-            <TabsTrigger value="analytics">
-              <BarChart3 className="h-4 w-4 mr-1" />
-              Analytics
-            </TabsTrigger>
-            <TabsTrigger value="approvals">
-              <Clock className="h-4 w-4 mr-1" />
-              Approvals
-            </TabsTrigger>
-            <TabsTrigger value="providers">
-              Provider Approvals ({pendingProviders.length})
-            </TabsTrigger>
-            <TabsTrigger value="appointments">
-              Appointments ({appointments.length})
-            </TabsTrigger>
-            <TabsTrigger value="payments">
-              <CreditCard className="h-4 w-4 mr-1" />
-              Payments
-            </TabsTrigger>
-            <TabsTrigger value="revenue">
-              Revenue
-            </TabsTrigger>
-            <TabsTrigger value="users">
-              Users
-            </TabsTrigger>
-            <TabsTrigger value="emails">
-              Email Templates
-            </TabsTrigger>
-            <TabsTrigger value="delivery">
-              <Mail className="h-4 w-4 mr-1" />
-              Email Delivery
-            </TabsTrigger>
-            <TabsTrigger value="disputes">
-              <AlertTriangle className="h-4 w-4 mr-1" />
-              Disputes
-            </TabsTrigger>
-            <TabsTrigger value="export">
-              <Database className="h-4 w-4 mr-1" />
-              Data Export
-            </TabsTrigger>
-            <TabsTrigger value="settings">
-              <Settings className="h-4 w-4 mr-1" />
-              Settings
-            </TabsTrigger>
-          </TabsList>
+          <div className="overflow-x-auto -mx-4 px-4 pb-1 scrollbar-hide" style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}>
+            <TabsList className="inline-flex w-max gap-1 bg-muted/60 p-1 rounded-lg">
+              <TabsTrigger value="analytics" className="text-xs sm:text-sm">
+                <BarChart3 className="h-4 w-4 mr-1.5" />
+                Analytics
+              </TabsTrigger>
+              <TabsTrigger value="approvals" className="text-xs sm:text-sm">
+                <Clock className="h-4 w-4 mr-1.5" />
+                Approvals
+              </TabsTrigger>
+              <TabsTrigger value="providers" className="text-xs sm:text-sm">
+                Provider Approvals ({pendingProviders.length})
+              </TabsTrigger>
+              <TabsTrigger value="appointments" className="text-xs sm:text-sm">
+                Appointments ({appointments.length})
+              </TabsTrigger>
+              <TabsTrigger value="payments" className="text-xs sm:text-sm">
+                <CreditCard className="h-4 w-4 mr-1.5" />
+                Payments
+              </TabsTrigger>
+              <TabsTrigger value="revenue" className="text-xs sm:text-sm">
+                Revenue
+              </TabsTrigger>
+              <TabsTrigger value="users" className="text-xs sm:text-sm">
+                Users
+              </TabsTrigger>
+              <TabsTrigger value="emails" className="text-xs sm:text-sm">
+                Email Templates
+              </TabsTrigger>
+              <TabsTrigger value="delivery" className="text-xs sm:text-sm">
+                <Mail className="h-4 w-4 mr-1.5" />
+                Delivery
+              </TabsTrigger>
+              <TabsTrigger value="disputes" className="text-xs sm:text-sm">
+                <AlertTriangle className="h-4 w-4 mr-1.5" />
+                Disputes
+              </TabsTrigger>
+              <TabsTrigger value="export" className="text-xs sm:text-sm">
+                <Database className="h-4 w-4 mr-1.5" />
+                Export
+              </TabsTrigger>
+              <TabsTrigger value="settings" className="text-xs sm:text-sm">
+                <Settings className="h-4 w-4 mr-1.5" />
+                Settings
+              </TabsTrigger>
+            </TabsList>
+          </div>
 
           {/* System Analytics Dashboard */}
           <TabsContent value="analytics">
