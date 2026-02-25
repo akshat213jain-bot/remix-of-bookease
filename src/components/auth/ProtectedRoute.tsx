@@ -1,4 +1,4 @@
-import React, { ReactNode } from "react";
+import { ReactNode } from "react";
 import { Navigate, useLocation } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
 import LoadingScreen from "@/components/ui/LoadingScreen";
@@ -11,8 +11,7 @@ interface ProtectedRouteProps {
   allowedRoles?: AppRole[];
 }
 
-const ProtectedRoute = React.forwardRef<HTMLDivElement, ProtectedRouteProps>(
-  ({ children, allowedRoles }, ref) => {
+const ProtectedRoute = ({ children, allowedRoles }: ProtectedRouteProps) => {
   const { user, role, isLoading, isBlocked } = useAuth();
   const location = useLocation();
 
@@ -40,8 +39,7 @@ const ProtectedRoute = React.forwardRef<HTMLDivElement, ProtectedRouteProps>(
     return <Navigate to={redirectPath} replace />;
   }
 
-  return <div ref={ref}>{children}</div>;
-});
-ProtectedRoute.displayName = "ProtectedRoute";
+  return <>{children}</>;
+};
 
 export default ProtectedRoute;
