@@ -48,11 +48,9 @@ const Providers = () => {
   const [selectedCategory, setSelectedCategory] = useState(categoryParam);
   const [sortBy, setSortBy] = useState("recommended");
 
-  // Only fetch providers when a category is selected or search query exists
-  const shouldFetchProviders = selectedCategory !== "" || searchQuery.length > 0;
-
+  // Always fetch providers - show all by default
   const { data: providers, isLoading, error } = useProviders(
-    shouldFetchProviders ? (selectedCategory !== "all" && selectedCategory !== "" ? selectedCategory : undefined) : "__none__",
+    selectedCategory && selectedCategory !== "all" ? selectedCategory : undefined,
     searchQuery
   );
 
@@ -179,36 +177,8 @@ const Providers = () => {
           </div>
         )}
 
-        {/* Prompt to select category */}
-        {!shouldFetchProviders && !isLoading && (
-          <Card className="border-dashed">
-            <CardContent className="py-16 text-center">
-              <div className="w-20 h-20 rounded-full bg-primary/10 flex items-center justify-center mx-auto mb-6">
-                <Search className="h-10 w-10 text-primary" />
-              </div>
-              <h3 className="text-xl font-semibold mb-2">What are you looking for?</h3>
-              <p className="text-muted-foreground mb-6 max-w-md mx-auto">
-                Select a category above or use the search bar to find the right professional for your needs.
-              </p>
-              <div className="flex flex-wrap justify-center gap-2">
-                {categoryIcons.slice(0, 3).map((cat) => (
-                  <Button
-                    key={cat.value}
-                    variant="outline"
-                    onClick={() => setSelectedCategory(cat.value)}
-                    className="gap-2"
-                  >
-                    <cat.icon className="h-4 w-4" />
-                    {cat.label}
-                  </Button>
-                ))}
-              </div>
-            </CardContent>
-          </Card>
-        )}
-
-        {/* Featured Professionals */}
-        {shouldFetchProviders && !isLoading && !error && (
+        {/* Providers List */}
+        {!isLoading && !error && (
           <>
             <div className="flex items-center justify-between mb-6">
               <h2 className="text-xl font-semibold">Featured Professionals</h2>
