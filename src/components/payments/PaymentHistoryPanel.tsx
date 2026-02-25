@@ -23,7 +23,7 @@ import {
   Receipt,
   Download,
   Loader2,
-  DollarSign,
+  Banknote,
   CheckCircle,
   XCircle,
   Clock,
@@ -138,7 +138,7 @@ const PaymentHistoryPanel = () => {
                 </p>
               </div>
               <div className="w-10 h-10 rounded-full bg-emerald-100 flex items-center justify-center">
-                <DollarSign className="h-5 w-5 text-emerald-600" />
+                <Banknote className="h-5 w-5 text-emerald-600" />
               </div>
             </div>
           </CardContent>

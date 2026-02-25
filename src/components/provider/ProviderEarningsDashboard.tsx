@@ -41,7 +41,8 @@ import { useProviderEarnings } from "@/hooks/useProviderEarnings";
 import { useProviderPendingPayments } from "@/hooks/useProviderPendingPayments";
 import { format, parseISO } from "date-fns";
 
-import { formatCurrency, CURRENCY_SYMBOL } from "@/lib/currency";
+import { formatCurrency } from "@/lib/currency";
+import { useCurrencySettings } from "@/hooks/useSystemSettings";
 import PendingPaymentsPanel from "./PendingPaymentsPanel";
 
 const formatTime = (time: string) => {
@@ -68,6 +69,7 @@ const getPaymentStatusBadge = (status: string) => {
 const COLORS = ["hsl(var(--primary))", "hsl(var(--chart-2))", "hsl(var(--chart-3))", "hsl(var(--chart-4))"];
 
 export const ProviderEarningsDashboard = () => {
+  const currency = useCurrencySettings();
   const {
     earnings,
     monthlyTrends,
@@ -280,8 +282,8 @@ export const ProviderEarningsDashboard = () => {
                     <span className="text-sm text-muted-foreground">Avg/Appointment</span>
                     <span className="font-semibold">
                       {earnings?.allTime?.count
-                        ? formatCurrency((earnings.allTime.total) / earnings.allTime.count)
-                        : `${CURRENCY_SYMBOL}0`
+                      ? formatCurrency((earnings.allTime.total) / earnings.allTime.count)
+                        : formatCurrency(0)
                       }
                     </span>
                   </div>

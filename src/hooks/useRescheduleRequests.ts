@@ -48,6 +48,7 @@ export const useRescheduleRequests = () => {
           reschedule_requested_by: "provider",
         })
         .eq("id", input.id)
+        .eq("provider_id", appointment.provider_id) // Defense-in-depth ownership filter
         .select("id, user_id, provider_id, appointment_date, start_time, end_time, status, proposed_date, proposed_start_time, proposed_end_time, reschedule_requested_by, reschedule_reason")
         .single();
 
@@ -138,6 +139,7 @@ export const useRescheduleRequests = () => {
           status: "approved",
         })
         .eq("id", appointmentId)
+        .eq("user_id", user.id) // Defense-in-depth: only the user accepting can match
         .select("id, user_id, provider_id, appointment_date, start_time, end_time, status")
         .single();
 
@@ -226,6 +228,7 @@ export const useRescheduleRequests = () => {
           reschedule_requested_by: null,
         })
         .eq("id", appointmentId)
+        .eq("user_id", user.id) // Defense-in-depth ownership filter
         .select("id, user_id, provider_id, appointment_date, start_time, end_time, status")
         .single();
 
