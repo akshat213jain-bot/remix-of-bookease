@@ -29,7 +29,7 @@ import {
   ListChecks,
   Mail,
   Send,
-  IndianRupee,
+  Wallet,
 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
@@ -505,7 +505,7 @@ const ProviderDashboard = () => {
                                     {/* Update Payment - only for physical visits */}
                                     {!isVideoAppointment && (
                                       <DropdownMenuItem onClick={() => handlePaymentClick(appointment)}>
-                                        <IndianRupee className="h-4 w-4 mr-2" />
+                                        <Wallet className="h-4 w-4 mr-2" />
                                         Update Payment
                                       </DropdownMenuItem>
                                     )}
@@ -642,7 +642,7 @@ const ProviderDashboard = () => {
                                     {/* Update Payment - only for physical visits */}
                                     {!isVideoAppointment && (
                                       <DropdownMenuItem onClick={() => handlePaymentClick(appointment)}>
-                                        <IndianRupee className="h-4 w-4 mr-2" />
+                                        <Wallet className="h-4 w-4 mr-2" />
                                         Update Payment
                                       </DropdownMenuItem>
                                     )}

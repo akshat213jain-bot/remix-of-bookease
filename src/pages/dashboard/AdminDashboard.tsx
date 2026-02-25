@@ -81,6 +81,8 @@ const getStatusBadge = (status: string) => {
 
 const AdminDashboard = () => {
   const [searchQuery, setSearchQuery] = useState("");
+  const [appointmentPage, setAppointmentPage] = useState(0);
+  const PAGE_SIZE = 20;
   const {
     appointments,
     pendingProviders,
@@ -309,79 +311,106 @@ const AdminDashboard = () => {
                     No appointments found
                   </div>
                 ) : (
-                  <Table>
-                    <TableHeader>
-                      <TableRow>
-                        <TableHead>Patient</TableHead>
-                        <TableHead>Provider</TableHead>
-                        <TableHead>Date & Time</TableHead>
-                        <TableHead>Status</TableHead>
-                        <TableHead className="text-right">Actions</TableHead>
-                      </TableRow>
-                    </TableHeader>
-                    <TableBody>
-                      {filteredAppointments.slice(0, 20).map((apt) => (
-                        <TableRow key={apt.id}>
-                          <TableCell>
-                            <div className="flex items-center gap-2">
-                              <Avatar className="h-8 w-8">
-                                <AvatarImage src={apt.user_profile?.avatar_url || undefined} />
-                                <AvatarFallback className="text-xs">
-                                  {apt.user_profile?.full_name
-                                    ?.split(" ")
-                                    .map((n) => n[0])
-                                    .join("") || "U"}
-                                </AvatarFallback>
-                              </Avatar>
+                  <>
+                    <Table>
+                      <TableHeader>
+                        <TableRow>
+                          <TableHead>Patient</TableHead>
+                          <TableHead>Provider</TableHead>
+                          <TableHead>Date & Time</TableHead>
+                          <TableHead>Status</TableHead>
+                          <TableHead className="text-right">Actions</TableHead>
+                        </TableRow>
+                      </TableHeader>
+                      <TableBody>
+                        {filteredAppointments.slice(appointmentPage * PAGE_SIZE, (appointmentPage + 1) * PAGE_SIZE).map((apt) => (
+                          <TableRow key={apt.id}>
+                            <TableCell>
+                              <div className="flex items-center gap-2">
+                                <Avatar className="h-8 w-8">
+                                  <AvatarImage src={apt.user_profile?.avatar_url || undefined} />
+                                  <AvatarFallback className="text-xs">
+                                    {apt.user_profile?.full_name
+                                      ?.split(" ")
+                                      .map((n) => n[0])
+                                      .join("") || "U"}
+                                  </AvatarFallback>
+                                </Avatar>
+                                <div>
+                                  <p className="font-medium text-sm">
+                                    {apt.user_profile?.full_name || "Unknown"}
+                                  </p>
+                                  <p className="text-xs text-muted-foreground">
+                                    {apt.user_profile?.email}
+                                  </p>
+                                </div>
+                              </div>
+                            </TableCell>
+                            <TableCell>
                               <div>
                                 <p className="font-medium text-sm">
-                                  {apt.user_profile?.full_name || "Unknown"}
+                                  {apt.provider_profile?.full_name || "Unknown"}
                                 </p>
                                 <p className="text-xs text-muted-foreground">
-                                  {apt.user_profile?.email}
+                                  {apt.provider_info?.profession}
                                 </p>
                               </div>
-                            </div>
-                          </TableCell>
-                          <TableCell>
-                            <div>
-                              <p className="font-medium text-sm">
-                                {apt.provider_profile?.full_name || "Unknown"}
-                              </p>
-                              <p className="text-xs text-muted-foreground">
-                                {apt.provider_info?.profession}
-                              </p>
-                            </div>
-                          </TableCell>
-                          <TableCell>
-                            <div>
-                              <p className="text-sm">
-                                {format(parseISO(apt.appointment_date), "MMM d, yyyy")}
-                              </p>
-                              <p className="text-xs text-muted-foreground">
-                                {formatTime(apt.start_time)}
-                              </p>
-                            </div>
-                          </TableCell>
-                          <TableCell>{getStatusBadge(apt.status)}</TableCell>
-                          <TableCell className="text-right">
-                            <DropdownMenu>
-                              <DropdownMenuTrigger asChild>
-                                <Button variant="ghost" size="icon">
-                                  <MoreHorizontal className="h-4 w-4" />
-                                </Button>
-                              </DropdownMenuTrigger>
-                              <DropdownMenuContent align="end">
-                                <DropdownMenuItem>View Details</DropdownMenuItem>
-                                <DropdownMenuItem>Contact Patient</DropdownMenuItem>
-                                <DropdownMenuItem>Contact Provider</DropdownMenuItem>
-                              </DropdownMenuContent>
-                            </DropdownMenu>
-                          </TableCell>
-                        </TableRow>
-                      ))}
-                    </TableBody>
-                  </Table>
+                            </TableCell>
+                            <TableCell>
+                              <div>
+                                <p className="text-sm">
+                                  {format(parseISO(apt.appointment_date), "MMM d, yyyy")}
+                                </p>
+                                <p className="text-xs text-muted-foreground">
+                                  {formatTime(apt.start_time)}
+                                </p>
+                              </div>
+                            </TableCell>
+                            <TableCell>{getStatusBadge(apt.status)}</TableCell>
+                            <TableCell className="text-right">
+                              <DropdownMenu>
+                                <DropdownMenuTrigger asChild>
+                                  <Button variant="ghost" size="icon">
+                                    <MoreHorizontal className="h-4 w-4" />
+                                  </Button>
+                                </DropdownMenuTrigger>
+                                <DropdownMenuContent align="end">
+                                  <DropdownMenuItem>View Details</DropdownMenuItem>
+                                  <DropdownMenuItem>Contact Patient</DropdownMenuItem>
+                                  <DropdownMenuItem>Contact Provider</DropdownMenuItem>
+                                </DropdownMenuContent>
+                              </DropdownMenu>
+                            </TableCell>
+                          </TableRow>
+                        ))}
+                      </TableBody>
+                    </Table>
+                    {filteredAppointments.length > PAGE_SIZE && (
+                      <div className="flex items-center justify-between mt-4">
+                        <p className="text-sm text-muted-foreground">
+                          Showing {appointmentPage * PAGE_SIZE + 1}–{Math.min((appointmentPage + 1) * PAGE_SIZE, filteredAppointments.length)} of {filteredAppointments.length}
+                        </p>
+                        <div className="flex gap-2">
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            disabled={appointmentPage === 0}
+                            onClick={() => setAppointmentPage(p => p - 1)}
+                          >
+                            Previous
+                          </Button>
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            disabled={(appointmentPage + 1) * PAGE_SIZE >= filteredAppointments.length}
+                            onClick={() => setAppointmentPage(p => p + 1)}
+                          >
+                            Next
+                          </Button>
+                        </div>
+                      </div>
+                    )}
+                  </>
                 )}
               </CardContent>
             </Card>
