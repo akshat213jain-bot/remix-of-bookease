@@ -29,6 +29,7 @@ import RecurringBookingOptions from "@/components/booking/RecurringBookingOption
 import JoinWaitlistDialog from "@/components/waitlist/JoinWaitlistDialog";
 import ProviderReviewsList from "@/components/reviews/ProviderReviewsList";
 import { VerificationBadge } from "@/components/providers/VerificationBadge";
+import { formatCurrencyValue } from "@/lib/currency";
 
 const ProviderDetail = () => {
   const { id } = useParams<{ id: string }>();
@@ -219,7 +220,7 @@ const ProviderDetail = () => {
                         <DollarSign className="h-4 w-4" />
                         <span>
                           {provider.consultation_fee
-                            ? `₹${provider.consultation_fee} per session`
+                            ? `${formatCurrencyValue(provider.consultation_fee)} per session`
                             : "Free consultation"}
                         </span>
                       </div>
@@ -278,7 +279,7 @@ const ProviderDetail = () => {
                         <div className="text-right">
                           <p className="font-semibold text-primary">
                             {provider.consultation_fee
-                              ? `₹${provider.consultation_fee}`
+                              ? formatCurrencyValue(provider.consultation_fee)
                               : "Free"}
                           </p>
                           <p className="text-xs text-muted-foreground">per session</p>
@@ -444,7 +445,7 @@ const ProviderDetail = () => {
                         : provider?.consultation_fee;
                       return fee && fee > 0 ? (
                         <p className="font-medium text-foreground mt-1">
-                          Total: ₹{fee}
+                          Total: {formatCurrencyValue(fee)}
                         </p>
                       ) : null;
                     })()}

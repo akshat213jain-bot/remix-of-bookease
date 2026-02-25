@@ -437,7 +437,7 @@ const UserDashboard = () => {
                     <span className="text-sm font-medium">Profile</span>
                   </Link>
                   <Link
-                    to="/dashboard/user/settings"
+                    to="/dashboard/user/profile"
                     className="flex items-center gap-3 px-3 py-2 rounded-md text-muted-foreground hover:bg-muted"
                   >
                     <Settings className="h-4 w-4" />

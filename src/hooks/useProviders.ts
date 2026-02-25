@@ -71,7 +71,8 @@ export const useProviders = (category?: string, searchQuery?: string) => {
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const { data, error } = await (supabase as any)
         .from("provider_public_info")
-        .select("provider_id, user_id, profession, specialty, bio, consultation_fee, location, years_of_experience, average_rating, total_reviews, video_enabled, video_consultation_fee, is_verified, full_name, avatar_url, city, country");
+        .select("provider_id, user_id, profession, specialty, bio, consultation_fee, location, years_of_experience, average_rating, total_reviews, video_enabled, video_consultation_fee, is_verified, full_name, avatar_url, city, country")
+        .limit(500);
 
       if (error) throw error;
       if (!data || data.length === 0) return [];

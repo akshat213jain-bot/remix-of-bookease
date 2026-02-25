@@ -126,7 +126,8 @@ export const useAdminData = () => {
         .select("id, user_id, profession, specialty, is_approved, is_active, created_at")
         .eq("is_approved", false)
         .eq("is_active", true)
-        .order("created_at", { ascending: false });
+        .order("created_at", { ascending: false })
+        .limit(200);
 
       if (error) throw error;
       if (!data || data.length === 0) return [];

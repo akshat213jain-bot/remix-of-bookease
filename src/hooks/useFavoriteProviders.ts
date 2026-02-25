@@ -51,7 +51,8 @@ export const useFavoriteProviders = () => {
             user_id
           )
         `)
-        .eq("user_id", user.id);
+        .eq("user_id", user.id)
+        .limit(200);
 
       if (error) throw error;
       if (!data || data.length === 0) return [];

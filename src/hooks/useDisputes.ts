@@ -48,7 +48,8 @@ export const useDisputes = () => {
           appointment:appointments(appointment_date, start_time),
           provider:provider_profiles(profession, user_id)
         `)
-        .order("created_at", { ascending: false });
+        .order("created_at", { ascending: false })
+        .limit(500);
       if (error) throw error;
       if (!data || data.length === 0) return [];
 
