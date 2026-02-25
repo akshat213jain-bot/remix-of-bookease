@@ -128,7 +128,8 @@ export const useAppointments = () => {
         `)
         .eq("user_id", user.id)
         .order("appointment_date", { ascending: true })
-        .order("start_time", { ascending: true });
+        .order("start_time", { ascending: true })
+        .limit(1000);
 
       if (error) throw error;
 
@@ -256,6 +257,7 @@ export const useAppointments = () => {
   // Cancel appointment
   const cancelAppointmentMutation = useMutation({
     mutationFn: async ({ id, reason }: { id: string; reason?: string }) => {
+      if (!user?.id) throw new Error("Not authenticated");
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const { error } = await (supabase as any)
         .from("appointments")

@@ -302,7 +302,7 @@ export function useDailyCall(options: UseDailyCallOptions = {}) {
         console.error("Error leaving call:", error);
       }
     }
-  }, [callState.roomUrl]);
+  }, [callState.roomUrl, user]);
 
   const toggleMute = useCallback(() => {
     if (callRef.current) {

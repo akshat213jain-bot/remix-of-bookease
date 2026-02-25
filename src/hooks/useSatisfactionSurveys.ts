@@ -46,6 +46,7 @@ export const useSatisfactionSurveys = () => {
       surveyId,
       ratings,
     }: {
+
       surveyId: string;
       ratings: {
         overall_rating: number;
@@ -56,6 +57,7 @@ export const useSatisfactionSurveys = () => {
         feedback?: string;
       };
     }) => {
+      if (!user?.id) throw new Error("Not authenticated");
       const { error } = await supabase
         .from("satisfaction_surveys")
         .update({

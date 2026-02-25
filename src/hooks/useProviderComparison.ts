@@ -28,9 +28,9 @@ export const useProviderComparison = () => {
     queryKey: ["providers-for-comparison"],
     queryFn: async (): Promise<ComparisonProvider[]> => {
       const { data: providers, error } = await supabase
-        .from("provider_profiles")
+        .from("provider_public_info")
         .select(`
-          id,
+          provider_id,
           user_id,
           profession,
           specialty,
@@ -42,26 +42,28 @@ export const useProviderComparison = () => {
           years_of_experience,
           location,
           video_enabled,
-          is_verified
+          is_verified,
+          full_name,
+          avatar_url
         `)
-        .eq("is_approved", true)
-        .eq("is_active", true)
         .limit(100);
 
       if (error) throw error;
-      
-      // Fetch profiles separately
-      const userIds = (providers || []).map(p => p.user_id);
-      const { data: profiles } = await supabase
-        .from("profiles")
-        .select("user_id, full_name, avatar_url")
-        .in("user_id", userIds);
-      
-      const profileMap = new Map(profiles?.map(p => [p.user_id, p]) || []);
-      
+
       return (providers || []).map(p => ({
-        ...p,
-        profile: profileMap.get(p.user_id) || null
+        id: p.provider_id,
+        profession: p.profession,
+        specialty: p.specialty,
+        bio: p.bio,
+        consultation_fee: p.consultation_fee,
+        video_consultation_fee: p.video_consultation_fee,
+        average_rating: p.average_rating,
+        total_reviews: p.total_reviews,
+        years_of_experience: p.years_of_experience,
+        location: p.location,
+        video_enabled: p.video_enabled,
+        is_verified: p.is_verified,
+        profile: { full_name: p.full_name || "Unknown", avatar_url: p.avatar_url },
       })) as ComparisonProvider[];
     },
   });
