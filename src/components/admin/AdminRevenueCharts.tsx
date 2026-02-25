@@ -124,8 +124,8 @@ const AdminRevenueCharts = () => {
                 <BarChart data={revenueData}>
                   <CartesianGrid strokeDasharray="3 3" className="stroke-muted" />
                   <XAxis dataKey="name" className="text-xs" />
-                  <YAxis 
-                    tickFormatter={(value) => `₹${(value / 100).toFixed(0)}`}
+                   <YAxis 
+                    tickFormatter={(value) => formatCurrency(value)}
                     className="text-xs"
                   />
                   <Tooltip

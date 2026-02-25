@@ -84,7 +84,8 @@ export const useLoyalty = () => {
         .from("referrals")
         .select("id, referrer_id, referred_id, referral_code, status, bonus_awarded, created_at, completed_at")
         .eq("referrer_id", user.id)
-        .order("created_at", { ascending: false });
+        .order("created_at", { ascending: false })
+        .limit(200);
 
       if (error) throw error;
       if (!data || data.length === 0) return [];

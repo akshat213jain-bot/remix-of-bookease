@@ -115,7 +115,8 @@ export const useProviderAppointments = () => {
           status,
           cancellation_reason: cancellation_reason || null,
         })
-        .eq("id", id);
+        .eq("id", id)
+        .eq("provider_id", providerId); // Defense-in-depth ownership filter
 
       if (error) throw error;
 
