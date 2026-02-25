@@ -252,8 +252,9 @@ const AdminAnalyticsDashboard = ({ showKpis = true }: AdminAnalyticsDashboardPro
                       cy="50%"
                       innerRadius={60}
                       outerRadius={80}
-                      paddingAngle={5}
+                      paddingAngle={2}
                       dataKey="value"
+                      stroke="none"
                     >
                       {statusData.map((_, index) => (
                         <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
