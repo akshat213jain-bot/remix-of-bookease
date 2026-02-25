@@ -57,7 +57,8 @@ export const useChat = () => {
             user_id
           )
         `)
-        .order("last_message_at", { ascending: false });
+        .order("last_message_at", { ascending: false })
+        .limit(100);
 
       if (error) throw error;
       if (!data || data.length === 0) return [];

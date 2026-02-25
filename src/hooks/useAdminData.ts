@@ -154,6 +154,7 @@ export const useAdminData = () => {
   // Approve provider
   const approveProviderMutation = useMutation({
     mutationFn: async (providerId: string) => {
+      if (role !== "admin") throw new Error("Unauthorized: admin role required");
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const { error } = await (supabase as any)
         .from("provider_profiles")
@@ -181,6 +182,7 @@ export const useAdminData = () => {
   // Reject provider (deactivate and mark as rejected)
   const rejectProviderMutation = useMutation({
     mutationFn: async (providerId: string) => {
+      if (role !== "admin") throw new Error("Unauthorized: admin role required");
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const { error } = await (supabase as any)
         .from("provider_profiles")
