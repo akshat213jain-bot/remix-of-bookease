@@ -30,7 +30,7 @@ export const useSatisfactionSurveys = () => {
 
       const { data, error } = await supabase
         .from("satisfaction_surveys")
-        .select("*")
+        .select("id, appointment_id, user_id, provider_id, overall_rating, communication_rating, punctuality_rating, value_rating, would_recommend, feedback, sent_at, completed_at, created_at")
         .eq("user_id", user.id)
         .is("completed_at", null)
         .order("sent_at", { ascending: false });

@@ -1,5 +1,6 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
+import { useAuth } from "@/contexts/AuthContext";
 import { useToast } from "@/hooks/use-toast";
 
 interface Transaction {
@@ -40,6 +41,7 @@ interface Balance {
 
 export const useAdminPayments = () => {
   const { toast } = useToast();
+  const { role } = useAuth();
   const queryClient = useQueryClient();
 
   const transactionsQuery = useQuery({
@@ -52,6 +54,7 @@ export const useAdminPayments = () => {
       if (error) throw error;
       return data;
     },
+    enabled: role === "admin",
   });
 
   const revenueQuery = useQuery({
@@ -64,6 +67,7 @@ export const useAdminPayments = () => {
       if (error) throw error;
       return data;
     },
+    enabled: role === "admin",
   });
 
   const balanceQuery = useQuery({
@@ -76,6 +80,7 @@ export const useAdminPayments = () => {
       if (error) throw error;
       return data;
     },
+    enabled: role === "admin",
   });
 
   const refundMutation = useMutation({

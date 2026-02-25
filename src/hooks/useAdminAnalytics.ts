@@ -1,5 +1,6 @@
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
+import { useAuth } from "@/contexts/AuthContext";
 
 interface Overview {
   totalAppointments: number;
@@ -66,6 +67,8 @@ interface TimeSlotAnalytics {
 }
 
 export const useAdminAnalytics = () => {
+  const { role } = useAuth();
+
   const overviewQuery = useQuery({
     queryKey: ["admin-analytics-overview"],
     queryFn: async (): Promise<Overview> => {
@@ -76,6 +79,7 @@ export const useAdminAnalytics = () => {
       if (error) throw error;
       return data.overview;
     },
+    enabled: role === "admin",
   });
 
   const bookingTrendsQuery = useQuery({
@@ -88,6 +92,7 @@ export const useAdminAnalytics = () => {
       if (error) throw error;
       return data;
     },
+    enabled: role === "admin",
   });
 
   const providerPerformanceQuery = useQuery({
@@ -100,6 +105,7 @@ export const useAdminAnalytics = () => {
       if (error) throw error;
       return data;
     },
+    enabled: role === "admin",
   });
 
   const timeSlotAnalyticsQuery = useQuery({
@@ -112,6 +118,7 @@ export const useAdminAnalytics = () => {
       if (error) throw error;
       return data;
     },
+    enabled: role === "admin",
   });
 
   return {

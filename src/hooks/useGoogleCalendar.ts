@@ -36,9 +36,9 @@ export const useGoogleCalendar = (): UseGoogleCalendarReturn => {
   const { toast } = useToast();
   const [isSyncing, setIsSyncing] = useState(false);
 
-  // Check if we have a stored access token
+  // Use sessionStorage instead of localStorage to limit token lifetime to browser session
   const getAccessToken = (): string | null => {
-    return localStorage.getItem("google_calendar_token");
+    return sessionStorage.getItem("google_calendar_token");
   };
 
   const isConnected = !!getAccessToken();
@@ -74,7 +74,7 @@ export const useGoogleCalendar = (): UseGoogleCalendarReturn => {
       if (event.origin !== window.location.origin) return;
       
       if (event.data?.type === "google-oauth-success") {
-        localStorage.setItem("google_calendar_token", event.data.access_token);
+        sessionStorage.setItem("google_calendar_token", event.data.access_token);
         toast({
           title: "Calendar Connected",
           description: "Your Google Calendar has been connected successfully.",
@@ -103,7 +103,7 @@ export const useGoogleCalendar = (): UseGoogleCalendarReturn => {
   };
 
   const disconnectCalendar = (): void => {
-    localStorage.removeItem("google_calendar_token");
+    sessionStorage.removeItem("google_calendar_token");
     toast({
       title: "Calendar Disconnected",
       description: "Your Google Calendar has been disconnected.",
@@ -148,7 +148,7 @@ export const useGoogleCalendar = (): UseGoogleCalendarReturn => {
       
       // Handle token expiration
       if (error instanceof Error && error.message.includes("401")) {
-        localStorage.removeItem("google_calendar_token");
+        sessionStorage.removeItem("google_calendar_token");
         toast({
           title: "Session Expired",
           description: "Please reconnect your Google Calendar.",
