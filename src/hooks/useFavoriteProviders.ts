@@ -24,6 +24,7 @@ export interface FavoriteProvider {
   };
 }
 
+// Fix #13: Batch profile lookups instead of N+1
 export const useFavoriteProviders = () => {
   const { user } = useAuth();
   const { toast } = useToast();
@@ -37,7 +38,7 @@ export const useFavoriteProviders = () => {
       const { data, error } = await supabase
         .from("favorite_providers")
         .select(`
-          *,
+          id, user_id, provider_id, created_at,
           provider:provider_profiles(
             id,
             profession,
@@ -53,30 +54,29 @@ export const useFavoriteProviders = () => {
         .eq("user_id", user.id);
 
       if (error) throw error;
+      if (!data || data.length === 0) return [];
 
-      // Fetch profile info for each provider
-      const providersWithProfiles = await Promise.all(
-        (data || []).map(async (fav) => {
-          if (fav.provider) {
-            const { data: profile } = await supabase
-              .from("profiles")
-              .select("full_name, avatar_url")
-              .eq("user_id", fav.provider.user_id)
-              .maybeSingle();
-            
-            return {
-              ...fav,
-              provider: {
-                ...fav.provider,
-                profile,
-              },
-            };
-          }
-          return fav;
-        })
-      );
+      // Batch fetch all provider user profiles at once
+      const providerUserIds = data
+        .filter(fav => fav.provider?.user_id)
+        .map(fav => fav.provider!.user_id);
 
-      return providersWithProfiles as FavoriteProvider[];
+      const uniqueUserIds = [...new Set(providerUserIds)];
+
+      const { data: profiles } = await supabase
+        .from("profiles")
+        .select("user_id, full_name, avatar_url")
+        .in("user_id", uniqueUserIds);
+
+      const profileMap = new Map(profiles?.map(p => [p.user_id, p]) || []);
+
+      return data.map(fav => ({
+        ...fav,
+        provider: fav.provider ? {
+          ...fav.provider,
+          profile: profileMap.get(fav.provider.user_id) || null,
+        } : undefined,
+      })) as FavoriteProvider[];
     },
     enabled: !!user?.id,
   });

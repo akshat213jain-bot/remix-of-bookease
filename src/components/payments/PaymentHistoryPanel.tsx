@@ -93,7 +93,6 @@ interface PaymentTransaction {
   payment_status: string;
   payment_amount: number | null;
   payment_date: string | null;
-  stripe_payment_intent_id: string | null;
   provider_id: string;
   status: string;
   is_video_consultation: boolean;
@@ -347,7 +346,7 @@ const PaymentHistoryPanel = () => {
               </div>
 
               <p className="text-xs text-muted-foreground text-center">
-                Transaction ID: {receiptDialog.payment.stripe_payment_intent_id?.slice(0, 20) || receiptDialog.payment.id.slice(0, 8)}...
+                Transaction ID: {receiptDialog.payment.id.slice(0, 8)}...
               </p>
             </div>
           )}

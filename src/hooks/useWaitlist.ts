@@ -26,20 +26,21 @@ interface CreateWaitlistInput {
   is_flexible?: boolean;
 }
 
+// Fix #14: Explicit columns
 export const useWaitlist = (providerId?: string) => {
   const { user } = useAuth();
   const { toast } = useToast();
   const queryClient = useQueryClient();
 
-  // Fetch user's waitlist entries
   const waitlistQuery = useQuery({
     queryKey: ["waitlist", user?.id, providerId],
     queryFn: async (): Promise<WaitlistEntry[]> => {
       if (!user?.id) return [];
 
-      let query = supabase
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      let query = (supabase as any)
         .from("slot_waitlist")
-        .select("*")
+        .select("id, user_id, provider_id, preferred_date, preferred_day_of_week, preferred_start_time, preferred_end_time, is_flexible, is_active, notified_at, created_at")
         .eq("user_id", user.id)
         .eq("is_active", true)
         .order("created_at", { ascending: false });
@@ -48,8 +49,7 @@ export const useWaitlist = (providerId?: string) => {
         query = query.eq("provider_id", providerId);
       }
 
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      const { data, error } = await (query as any);
+      const { data, error } = await query;
 
       if (error) throw error;
       return data || [];
@@ -57,7 +57,6 @@ export const useWaitlist = (providerId?: string) => {
     enabled: !!user?.id,
   });
 
-  // Join waitlist
   const joinMutation = useMutation({
     mutationFn: async (input: CreateWaitlistInput) => {
       if (!user?.id) throw new Error("Not authenticated");
@@ -97,7 +96,6 @@ export const useWaitlist = (providerId?: string) => {
     },
   });
 
-  // Leave waitlist
   const leaveMutation = useMutation({
     mutationFn: async (waitlistId: string) => {
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -124,7 +122,6 @@ export const useWaitlist = (providerId?: string) => {
     },
   });
 
-  // Check if user is on waitlist for a provider
   const isOnWaitlist = (checkProviderId: string) => {
     return (waitlistQuery.data || []).some(
       (entry) => entry.provider_id === checkProviderId && entry.is_active

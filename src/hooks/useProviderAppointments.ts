@@ -27,7 +27,6 @@ export interface ProviderAppointment {
   proposed_start_time: string | null;
   proposed_end_time: string | null;
   reschedule_reason: string | null;
-  // Payment fields
   payment_status: string | null;
   payment_method: string | null;
   payment_amount: number | null;
@@ -47,7 +46,7 @@ export const useProviderAppointments = () => {
   const queryClient = useQueryClient();
   const providerId = providerProfile?.id;
 
-  // Fetch provider's appointments
+  // Fetch provider's appointments — explicit columns, no select("*") (#5)
   const appointmentsQuery = useQuery({
     queryKey: ["provider-appointments", providerId],
     queryFn: async (): Promise<ProviderAppointment[]> => {
@@ -56,7 +55,7 @@ export const useProviderAppointments = () => {
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const { data, error } = await (supabase as any)
         .from("appointments")
-        .select("*")
+        .select("id, user_id, provider_id, appointment_date, start_time, end_time, status, notes, cancellation_reason, created_at, updated_at, is_video_consultation, meeting_url, meeting_room_name, reschedule_requested_by, proposed_date, proposed_start_time, proposed_end_time, reschedule_reason, payment_status, payment_method, payment_amount, payment_date")
         .eq("provider_id", providerId)
         .order("appointment_date", { ascending: true })
         .order("start_time", { ascending: true });
@@ -65,7 +64,7 @@ export const useProviderAppointments = () => {
 
       if (!data || data.length === 0) return [];
 
-      // Fetch user profiles for appointments
+      // Batch fetch user profiles
       const userIds: string[] = [];
       data.forEach((a: ProviderAppointment) => {
         if (a.user_id && !userIds.includes(a.user_id)) {
@@ -172,7 +171,7 @@ export const useProviderAppointments = () => {
             related_appointment_id: id,
             recipient_email: appointment.user_profile.email,
             recipient_name: appointment.user_profile.full_name,
-            send_email: true, // Send email notification
+            send_email: true,
           });
         }
       }
@@ -211,12 +210,10 @@ export const useProviderAppointments = () => {
     return `${hour12}:${minutes} ${ampm}`;
   };
 
-  // Get appointments by status filter
   const getAppointmentsByStatus = (statuses: AppointmentStatus[]) => {
     return (appointmentsQuery.data || []).filter(a => statuses.includes(a.status));
   };
 
-  // Get today's appointments
   const getTodayAppointments = () => {
     const today = new Date().toISOString().split("T")[0];
     return (appointmentsQuery.data || []).filter(
@@ -224,12 +221,10 @@ export const useProviderAppointments = () => {
     );
   };
 
-  // Get pending appointments
   const getPendingAppointments = () => {
     return getAppointmentsByStatus(["pending"]);
   };
 
-  // Get upcoming appointments (approved, future dates)
   const getUpcomingAppointments = () => {
     const today = new Date().toISOString().split("T")[0];
     return (appointmentsQuery.data || []).filter(
@@ -237,7 +232,7 @@ export const useProviderAppointments = () => {
     );
   };
 
-  // Update payment status mutation
+  // Fix #1: Payment updates now go through edge function (service_role) to bypass trigger
   const updatePaymentMutation = useMutation({
     mutationFn: async ({
       id,
@@ -250,23 +245,17 @@ export const useProviderAppointments = () => {
       payment_method: string;
       payment_amount?: number;
     }) => {
-      const updateData: Record<string, unknown> = {
-        payment_status,
-        payment_method: payment_status === "paid" ? payment_method : null,
-        payment_date: payment_status === "paid" ? new Date().toISOString() : null,
-      };
-
-      if (payment_amount !== undefined) {
-        updateData.payment_amount = payment_amount;
-      }
-
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      const { error } = await (supabase as any)
-        .from("appointments")
-        .update(updateData)
-        .eq("id", id);
+      const { data, error } = await supabase.functions.invoke("update-payment", {
+        body: {
+          appointment_id: id,
+          payment_status,
+          payment_method,
+          payment_amount,
+        },
+      });
 
       if (error) throw error;
+      if (data?.error) throw new Error(data.error);
     },
     onSuccess: (_, variables) => {
       queryClient.invalidateQueries({ queryKey: ["provider-appointments", providerId] });

@@ -14,3 +14,6 @@ verify_jwt = false
 
 [functions.reset-password]
 verify_jwt = false
+
+[functions.update-payment]
+verify_jwt = false

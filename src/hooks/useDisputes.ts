@@ -44,7 +44,7 @@ export const useDisputes = () => {
       const { data, error } = await supabase
         .from("disputes")
         .select(`
-          *,
+          id, appointment_id, user_id, provider_id, dispute_type, description, status, resolution, resolved_by, resolved_at, created_at, updated_at,
           appointment:appointments(appointment_date, start_time),
           provider:provider_profiles(profession)
         `)
@@ -85,6 +85,7 @@ export const useDisputes = () => {
     },
   });
 
+  // Fix #9: Client-side admin guard before resolving disputes
   const resolveDisputeMutation = useMutation({
     mutationFn: async ({
       disputeId,
@@ -94,6 +95,7 @@ export const useDisputes = () => {
       resolution: string;
     }) => {
       if (!user?.id) throw new Error("Not authenticated");
+      if (role !== "admin") throw new Error("Only admins can resolve disputes");
 
       const { error } = await supabase
         .from("disputes")
