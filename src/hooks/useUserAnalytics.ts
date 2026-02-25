@@ -28,7 +28,7 @@ export const useUserAnalytics = () => {
       const { data: appointments, error } = await supabase
         .from("appointments")
         .select(`
-          *,
+          id, appointment_date, start_time, end_time, status, payment_amount,
           provider:provider_profiles(
             profession,
             user_id

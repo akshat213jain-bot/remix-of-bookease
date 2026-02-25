@@ -176,7 +176,8 @@ export const useChatMessages = (conversationId: string | null) => {
         .from("chat_messages")
         .select("id, conversation_id, sender_id, message, is_read, created_at")
         .eq("conversation_id", conversationId)
-        .order("created_at", { ascending: true });
+        .order("created_at", { ascending: true })
+        .limit(200);
 
       if (error) throw error;
       return data as ChatMessage[];

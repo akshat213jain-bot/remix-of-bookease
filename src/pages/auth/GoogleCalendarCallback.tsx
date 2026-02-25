@@ -20,7 +20,7 @@ const GoogleCalendarCallback = () => {
         window.close();
       } else {
         // Fallback: store token and redirect
-        localStorage.setItem("google_calendar_token", accessToken);
+        sessionStorage.setItem("google_calendar_token", accessToken);
         window.location.href = "/dashboard/user";
       }
     } else if (error) {

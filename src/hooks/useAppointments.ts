@@ -111,7 +111,11 @@ export const useAppointments = () => {
       const { data, error } = await (supabase as any)
         .from("appointments")
         .select(`
-          *,
+          id, user_id, provider_id, appointment_date, start_time, end_time,
+          status, notes, cancellation_reason, created_at, updated_at,
+          is_video_consultation, meeting_url, meeting_room_name,
+          reschedule_requested_by, proposed_date, proposed_start_time, proposed_end_time,
+          reschedule_reason, payment_amount, payment_status, payment_date,
           provider:provider_profiles(
             id,
             profession,
@@ -285,7 +289,7 @@ export const useAppointments = () => {
       const { data: appointment, error: fetchError } = await (supabase as any)
         .from("appointments")
         .select(`
-          *,
+          id, user_id, provider_id,
           provider:provider_profiles(id, user_id)
         `)
         .eq("id", input.id)

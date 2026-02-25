@@ -45,7 +45,7 @@ export const useProviderWaitlist = () => {
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const { data, error } = await (supabase as any)
         .from("slot_waitlist")
-        .select("*")
+        .select("id, user_id, provider_id, preferred_date, preferred_day_of_week, preferred_start_time, preferred_end_time, is_flexible, is_active, notified_at, created_at")
         .eq("provider_id", providerId)
         .eq("is_active", true)
         .order("created_at", { ascending: false });

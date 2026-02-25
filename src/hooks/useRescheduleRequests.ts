@@ -27,7 +27,8 @@ export const useRescheduleRequests = () => {
       const { data: appointment, error: fetchError } = await (supabase as any)
         .from("appointments")
         .select(`
-          *,
+          id, user_id, provider_id, appointment_date, start_time, end_time, status,
+          reschedule_requested_by, proposed_date, proposed_start_time, proposed_end_time,
           provider:provider_profiles(user_id)
         `)
         .eq("id", input.id)
@@ -111,7 +112,8 @@ export const useRescheduleRequests = () => {
       const { data: appointment, error: fetchError } = await (supabase as any)
         .from("appointments")
         .select(`
-          *,
+          id, user_id, provider_id, reschedule_requested_by,
+          proposed_date, proposed_start_time, proposed_end_time,
           provider:provider_profiles(user_id)
         `)
         .eq("id", appointmentId)
@@ -204,7 +206,7 @@ export const useRescheduleRequests = () => {
       const { data: appointment, error: fetchError } = await (supabase as any)
         .from("appointments")
         .select(`
-          *,
+          id, user_id, provider_id, reschedule_requested_by,
           provider:provider_profiles(user_id)
         `)
         .eq("id", appointmentId)
