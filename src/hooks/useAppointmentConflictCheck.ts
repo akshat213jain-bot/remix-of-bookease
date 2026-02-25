@@ -60,36 +60,38 @@ export const useAppointmentConflictCheck = (
             const newStart = timeToMinutes(startTime);
             const newEnd = timeToMinutes(endTime);
 
-            const conflicts: ConflictingAppointment[] = [];
-
-            for (const apt of appointments || []) {
+            // Find overlapping appointments first
+            const overlapping = (appointments || []).filter((apt: { start_time: string; end_time: string }) => {
                 const aptStart = timeToMinutes(apt.start_time);
                 const aptEnd = timeToMinutes(apt.end_time);
+                return newStart < aptEnd && newEnd > aptStart;
+            });
 
-                // Check if times overlap
-                const overlaps = newStart < aptEnd && newEnd > aptStart;
-
-                if (overlaps) {
-                    // Get provider name
-                    let providerName = "Provider";
-                    if (apt.provider?.user_id) {
-                        const { data: profile } = await supabase
-                            .from("profiles")
-                            .select("full_name")
-                            .eq("user_id", apt.provider.user_id)
-                            .single();
-                        providerName = profile?.full_name || "Provider";
-                    }
-
-                    conflicts.push({
-                        id: apt.id,
-                        appointment_date: apt.appointment_date,
-                        start_time: apt.start_time,
-                        end_time: apt.end_time,
-                        provider_name: providerName,
-                    });
-                }
+            if (overlapping.length === 0) {
+                return { hasConflict: false, conflictingAppointments: [] };
             }
+
+            // Batch fetch all provider names at once (fix N+1)
+            const providerUserIds = overlapping
+                .map((apt: { provider?: { user_id: string } }) => apt.provider?.user_id)
+                .filter(Boolean) as string[];
+
+            const profileMap = new Map<string, string>();
+            if (providerUserIds.length > 0) {
+                const { data: profiles } = await supabase
+                    .from("profiles")
+                    .select("user_id, full_name")
+                    .in("user_id", providerUserIds);
+                (profiles || []).forEach(p => profileMap.set(p.user_id, p.full_name));
+            }
+
+            const conflicts: ConflictingAppointment[] = overlapping.map((apt: { id: string; appointment_date: string; start_time: string; end_time: string; provider?: { user_id: string } }) => ({
+                id: apt.id,
+                appointment_date: apt.appointment_date,
+                start_time: apt.start_time,
+                end_time: apt.end_time,
+                provider_name: (apt.provider?.user_id && profileMap.get(apt.provider.user_id)) || "Provider",
+            }));
 
             return {
                 hasConflict: conflicts.length > 0,

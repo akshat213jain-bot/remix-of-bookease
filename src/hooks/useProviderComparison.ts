@@ -45,7 +45,8 @@ export const useProviderComparison = () => {
           is_verified
         `)
         .eq("is_approved", true)
-        .eq("is_active", true);
+        .eq("is_active", true)
+        .limit(100);
 
       if (error) throw error;
       

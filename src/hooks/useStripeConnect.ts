@@ -33,7 +33,7 @@ export const useStripeConnect = () => {
       return data;
     },
     enabled: !!user?.id,
-    refetchInterval: 30000, // Refresh every 30 seconds
+    refetchInterval: 60000, // Refresh every 60 seconds
   });
 
   // Start onboarding

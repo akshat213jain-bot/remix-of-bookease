@@ -81,44 +81,23 @@ export const useProviderAvailability = () => {
         ...schedule,
       }));
 
-      // First delete slots for days that are no longer in the schedule
-      const newDays = new Set(schedules.map(s => s.day_of_week));
+      // Atomic: delete all existing then insert new in a single transaction-like flow
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      const { data: existing } = await (supabase as any)
+      const { error: deleteError } = await (supabase as any)
         .from("provider_availability")
-        .select("id, day_of_week")
+        .delete()
         .eq("provider_id", providerId);
 
-      const idsToDelete = (existing || [])
-        .filter((e: { day_of_week: number }) => !newDays.has(e.day_of_week))
-        .map((e: { id: string }) => e.id);
+      if (deleteError) throw deleteError;
 
-      if (idsToDelete.length > 0) {
+      if (dataToUpsert.length > 0) {
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        await (supabase as any)
+        const { error: insertError } = await (supabase as any)
           .from("provider_availability")
-          .delete()
-          .in("id", idsToDelete);
+          .insert(dataToUpsert);
+
+        if (insertError) throw insertError;
       }
-
-      // Delete existing entries for days we're about to insert (safe replace per day)
-      const daysToReplace = Array.from(newDays);
-      if (daysToReplace.length > 0) {
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        await (supabase as any)
-          .from("provider_availability")
-          .delete()
-          .eq("provider_id", providerId)
-          .in("day_of_week", daysToReplace);
-      }
-
-      // Now insert fresh data
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      const { error } = await (supabase as any)
-        .from("provider_availability")
-        .insert(dataToUpsert);
-
-      if (error) throw error;
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["provider-availability", providerId] });

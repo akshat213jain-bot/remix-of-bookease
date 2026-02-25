@@ -143,7 +143,7 @@ export const useProviderProfile = () => {
         .from("provider_profiles")
         .update(updates)
         .eq("user_id", user.id)
-        .select()
+        .select("id, user_id, profession, specialty, bio, consultation_fee, location, years_of_experience, is_approved, is_active, video_enabled, video_consultation_fee, require_video_payment")
         .maybeSingle();
 
       if (error) throw error;

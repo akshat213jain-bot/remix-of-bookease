@@ -85,7 +85,8 @@ export const useChat = () => {
         .from("chat_messages")
         .select("id, conversation_id, sender_id, message, is_read, created_at")
         .in("conversation_id", conversationIds)
-        .order("created_at", { ascending: false });
+        .order("created_at", { ascending: false })
+        .limit(500);
 
       const lastMessageMap = new Map<string, ChatMessage>();
       const unreadCountMap = new Map<string, number>();
