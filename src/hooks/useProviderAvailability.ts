@@ -176,11 +176,13 @@ export const useProviderAvailability = () => {
 
   const removeBlockedDateMutation = useMutation({
     mutationFn: async (blockedDateId: string) => {
+      if (!providerId) throw new Error("Provider profile not found");
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const { error } = await (supabase as any)
         .from("provider_blocked_dates")
         .delete()
-        .eq("id", blockedDateId);
+        .eq("id", blockedDateId)
+        .eq("provider_id", providerId); // Defense-in-depth ownership filter
 
       if (error) throw error;
     },

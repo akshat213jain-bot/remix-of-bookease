@@ -16,13 +16,13 @@ const defaultCurrency: CurrencyConfig = {
 };
 
 /**
- * Format a number (in smallest unit like paise/cents) to currency string
- * @param amountInSmallestUnit - Amount in smallest currency unit
+ * Format a number to currency string
+ * @param amount - Amount in whole currency units (as stored in DB)
  * @param config - Optional currency configuration
  * @returns Formatted currency string
  */
 export const formatCurrency = (
-  amountInSmallestUnit: number,
+  amount: number,
   config?: CurrencyConfig
 ): string => {
   const currency = config || defaultCurrency;
@@ -31,17 +31,17 @@ export const formatCurrency = (
     currency: currency.code,
     minimumFractionDigits: 0,
     maximumFractionDigits: 2,
-  }).format(amountInSmallestUnit / 100);
+  }).format(amount);
 };
 
 /**
- * Format a number (in smallest unit) to currency string without decimals
- * @param amountInSmallestUnit - Amount in smallest currency unit
+ * Format a number to currency string without decimals
+ * @param amount - Amount in whole currency units
  * @param config - Optional currency configuration
  * @returns Formatted currency string
  */
 export const formatCurrencyCompact = (
-  amountInSmallestUnit: number,
+  amount: number,
   config?: CurrencyConfig
 ): string => {
   const currency = config || defaultCurrency;
@@ -50,7 +50,7 @@ export const formatCurrencyCompact = (
     currency: currency.code,
     minimumFractionDigits: 0,
     maximumFractionDigits: 0,
-  }).format(amountInSmallestUnit / 100);
+  }).format(amount);
 };
 
 /**

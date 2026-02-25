@@ -315,6 +315,7 @@ export const useAppointments = () => {
           status: "pending", // Reset to pending for provider approval
         })
         .eq("id", input.id)
+        .eq("user_id", user.id) // Defense-in-depth ownership filter
         .select("id, user_id, provider_id, appointment_date, start_time, end_time, status")
         .single();
 

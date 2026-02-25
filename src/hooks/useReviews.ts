@@ -168,6 +168,7 @@ export const useProviderReviews = () => {
 
   const respondToReviewMutation = useMutation({
     mutationFn: async ({ reviewId, response }: { reviewId: string; response: string }) => {
+      if (!providerId) throw new Error("Provider profile not found");
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const { error } = await (supabase as any)
         .from("reviews")
@@ -175,7 +176,8 @@ export const useProviderReviews = () => {
           provider_response: response,
           provider_response_at: new Date().toISOString(),
         })
-        .eq("id", reviewId);
+        .eq("id", reviewId)
+        .eq("provider_id", providerId); // Defense-in-depth ownership filter
 
       if (error) throw error;
     },
@@ -228,7 +230,8 @@ export const usePublicProviderReviews = (providerId?: string) => {
         .select("id, provider_id, rating, review_text, is_visible, provider_response, provider_response_at, created_at")
         .eq("provider_id", providerId)
         .eq("is_visible", true)
-        .order("created_at", { ascending: false });
+        .order("created_at", { ascending: false })
+        .limit(200);
 
       if (error) throw error;
       return data || [];
