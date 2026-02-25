@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import './LoadingScreen.css';
 
 interface LoadingScreenProps {
@@ -7,8 +7,7 @@ interface LoadingScreenProps {
     minDisplayTime?: number;
 }
 
-const LoadingScreen = React.forwardRef<HTMLDivElement, LoadingScreenProps>(
-  ({ message = 'Loading...', fullScreen = true, minDisplayTime = 1500 }, ref) => {
+const LoadingScreen = ({ message = 'Loading...', fullScreen = true, minDisplayTime = 1500 }: LoadingScreenProps) => {
     const [isVisible, setIsVisible] = useState(true);
     const [hasMinTimeElapsed, setHasMinTimeElapsed] = useState(false);
 
@@ -21,7 +20,7 @@ const LoadingScreen = React.forwardRef<HTMLDivElement, LoadingScreenProps>(
     }, [minDisplayTime]);
 
     return (
-        <div ref={ref} className={`loading-screen ${fullScreen ? 'loading-screen--fullscreen' : ''}`}>
+        <div className={`loading-screen ${fullScreen ? 'loading-screen--fullscreen' : ''}`}>
             <div className="loading-container">
                 <div className="orbital-loader">
                     <div className="orbital-ring orbital-ring--outer">
@@ -46,7 +45,6 @@ const LoadingScreen = React.forwardRef<HTMLDivElement, LoadingScreenProps>(
             </div>
         </div>
     );
-});
-LoadingScreen.displayName = "LoadingScreen";
+};
 
 export default LoadingScreen;

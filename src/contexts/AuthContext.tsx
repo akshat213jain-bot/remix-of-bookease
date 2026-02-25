@@ -39,8 +39,7 @@ export const useAuth = () => {
   return context;
 };
 
-export const AuthProvider = React.forwardRef<HTMLDivElement, { children: ReactNode }>(
-  ({ children }, ref) => {
+export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const [user, setUser] = useState<User | null>(null);
   const [session, setSession] = useState<Session | null>(null);
   const [profile, setProfile] = useState<Profile | null>(null);
@@ -214,10 +213,5 @@ export const AuthProvider = React.forwardRef<HTMLDivElement, { children: ReactNo
     signOut,
   };
 
-  return (
-    <AuthContext.Provider value={value}>
-      <div ref={ref}>{children}</div>
-    </AuthContext.Provider>
-  );
-});
-AuthProvider.displayName = "AuthProvider";
+  return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
+};
