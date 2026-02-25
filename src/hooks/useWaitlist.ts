@@ -74,7 +74,7 @@ export const useWaitlist = (providerId?: string) => {
           is_flexible: input.is_flexible || false,
           is_active: true,
         })
-        .select()
+        .select("id, user_id, provider_id, preferred_date, preferred_day_of_week, preferred_start_time, preferred_end_time, is_flexible, is_active, created_at")
         .single();
 
       if (error) throw error;

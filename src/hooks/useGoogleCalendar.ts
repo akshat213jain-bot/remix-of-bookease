@@ -130,8 +130,10 @@ export const useGoogleCalendar = (): UseGoogleCalendarReturn => {
         body: {
           action: "create",
           appointment_id: appointmentId,
-          access_token: accessToken,
           event_details: details,
+        },
+        headers: {
+          "X-Google-Access-Token": accessToken,
         },
       });
 
@@ -181,9 +183,11 @@ export const useGoogleCalendar = (): UseGoogleCalendarReturn => {
         body: {
           action: "update",
           appointment_id: appointmentId,
-          access_token: accessToken,
           event_id: eventId,
           event_details: details,
+        },
+        headers: {
+          "X-Google-Access-Token": accessToken,
         },
       });
 
@@ -221,8 +225,10 @@ export const useGoogleCalendar = (): UseGoogleCalendarReturn => {
         body: {
           action: "delete",
           appointment_id: appointmentId,
-          access_token: accessToken,
           event_id: eventId,
+        },
+        headers: {
+          "X-Google-Access-Token": accessToken,
         },
       });
 

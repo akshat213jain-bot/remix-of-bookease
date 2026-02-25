@@ -58,7 +58,8 @@ export const useProviderAppointments = () => {
         .select("id, user_id, provider_id, appointment_date, start_time, end_time, status, notes, cancellation_reason, created_at, updated_at, is_video_consultation, meeting_url, meeting_room_name, reschedule_requested_by, proposed_date, proposed_start_time, proposed_end_time, reschedule_reason, payment_status, payment_method, payment_amount, payment_date")
         .eq("provider_id", providerId)
         .order("appointment_date", { ascending: true })
-        .order("start_time", { ascending: true });
+        .order("start_time", { ascending: true })
+        .limit(500);
 
       if (error) throw error;
 

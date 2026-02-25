@@ -97,14 +97,15 @@ export const usePushNotifications = () => {
       // Store subscription directly in the database
       const sub = subscription.toJSON();
       const { data: { session } } = await supabase.auth.getSession();
-      if (session?.user?.id) {
-        await supabase.from("push_subscriptions").upsert({
-          user_id: session.user.id,
-          endpoint: sub.endpoint!,
-          p256dh: sub.keys!.p256dh!,
-          auth: sub.keys!.auth!,
-        }, { onConflict: "user_id,endpoint" });
+      if (!session?.user?.id) {
+        throw new Error("Session expired. Please log in again.");
       }
+      await supabase.from("push_subscriptions").upsert({
+        user_id: session.user.id,
+        endpoint: sub.endpoint!,
+        p256dh: sub.keys!.p256dh!,
+        auth: sub.keys!.auth!,
+      }, { onConflict: "user_id,endpoint" });
 
       setState({
         isSupported: true,
@@ -144,7 +145,9 @@ export const usePushNotifications = () => {
 
         // Remove subscription from database
         const { data: { session } } = await supabase.auth.getSession();
-        if (session?.user?.id) {
+        if (!session?.user?.id) {
+          console.warn("No active session, skipping database cleanup");
+        } else {
           await supabase
             .from("push_subscriptions")
             .delete()
