@@ -93,7 +93,7 @@ export const useDisputes = () => {
           ...dispute,
           user_id: user.id,
         })
-        .select()
+        .select("id, appointment_id, user_id, provider_id, dispute_type, description, status, created_at")
         .single();
 
       if (error) throw error;
