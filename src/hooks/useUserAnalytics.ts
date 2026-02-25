@@ -35,7 +35,8 @@ export const useUserAnalytics = () => {
           )
         `)
         .eq("user_id", user.id)
-        .order("appointment_date", { ascending: false });
+        .order("appointment_date", { ascending: false })
+        .limit(1000);
 
       if (error) throw error;
 

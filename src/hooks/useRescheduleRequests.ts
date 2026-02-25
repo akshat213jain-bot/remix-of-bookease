@@ -48,7 +48,7 @@ export const useRescheduleRequests = () => {
           reschedule_requested_by: "provider",
         })
         .eq("id", input.id)
-        .select()
+        .select("id, user_id, provider_id, appointment_date, start_time, end_time, status, proposed_date, proposed_start_time, proposed_end_time, reschedule_requested_by, reschedule_reason")
         .single();
 
       if (error) throw error;
@@ -138,7 +138,7 @@ export const useRescheduleRequests = () => {
           status: "approved",
         })
         .eq("id", appointmentId)
-        .select()
+        .select("id, user_id, provider_id, appointment_date, start_time, end_time, status")
         .single();
 
       if (error) throw error;
@@ -226,7 +226,7 @@ export const useRescheduleRequests = () => {
           reschedule_requested_by: null,
         })
         .eq("id", appointmentId)
-        .select()
+        .select("id, user_id, provider_id, appointment_date, start_time, end_time, status")
         .single();
 
       if (error) throw error;

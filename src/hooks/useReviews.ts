@@ -78,7 +78,7 @@ export const useUserReviews = () => {
           rating: input.rating,
           review_text: input.review_text || null,
         })
-        .select()
+        .select("id, user_id, provider_id, appointment_id, rating, review_text, created_at")
         .single();
 
       if (error) throw error;

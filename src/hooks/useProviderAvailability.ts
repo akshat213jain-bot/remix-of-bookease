@@ -81,22 +81,42 @@ export const useProviderAvailability = () => {
         ...schedule,
       }));
 
-      // Atomic: delete all existing then insert new in a single transaction-like flow
+      // Insert new records first, then delete old ones to prevent data loss
+      let insertedIds: string[] = [];
+
+      if (dataToUpsert.length > 0) {
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        const { data: inserted, error: insertError } = await (supabase as any)
+          .from("provider_availability")
+          .insert(dataToUpsert)
+          .select("id");
+
+        if (insertError) throw insertError;
+        insertedIds = (inserted || []).map((r: { id: string }) => r.id);
+      }
+
+      // Now delete old records (excluding newly inserted ones)
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      const { error: deleteError } = await (supabase as any)
+      let deleteQuery = (supabase as any)
         .from("provider_availability")
         .delete()
         .eq("provider_id", providerId);
 
-      if (deleteError) throw deleteError;
+      if (insertedIds.length > 0) {
+        deleteQuery = deleteQuery.not("id", "in", `(${insertedIds.join(",")})`);
+      }
 
-      if (dataToUpsert.length > 0) {
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        const { error: insertError } = await (supabase as any)
-          .from("provider_availability")
-          .insert(dataToUpsert);
-
-        if (insertError) throw insertError;
+      const { error: deleteError } = await deleteQuery;
+      if (deleteError) {
+        // Rollback: delete the newly inserted records
+        if (insertedIds.length > 0) {
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
+          await (supabase as any)
+            .from("provider_availability")
+            .delete()
+            .in("id", insertedIds);
+        }
+        throw deleteError;
       }
     },
     onSuccess: () => {
