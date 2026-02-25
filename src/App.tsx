@@ -1,3 +1,4 @@
+import React from "react";
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
@@ -32,7 +33,7 @@ import Compare from "./pages/Compare";
 
 const queryClient = new QueryClient();
 
-const App = () => (
+const App = React.forwardRef<HTMLDivElement>((_, ref) => (
   <ThemeProvider attribute="class" defaultTheme="light" enableSystem disableTransitionOnChange>
     <QueryClientProvider client={queryClient}>
       <TooltipProvider>
@@ -164,6 +165,7 @@ const App = () => (
       </TooltipProvider>
     </QueryClientProvider>
   </ThemeProvider>
-);
+));
+App.displayName = "App";
 
 export default App;
