@@ -4,6 +4,8 @@ import { useProviderProfile, useProfile } from "@/hooks/useProfile";
 import { useToast } from "@/hooks/use-toast";
 import { sendNotification } from "@/hooks/useNotifications";
 import { format } from "date-fns";
+import { useCurrencySettings } from "@/hooks/useSystemSettings";
+import { formatCurrencyValue } from "@/lib/currency";
 
 type AppointmentStatus = "pending" | "approved" | "rejected" | "completed" | "cancelled";
 
@@ -45,6 +47,7 @@ export const useProviderAppointments = () => {
   const { toast } = useToast();
   const queryClient = useQueryClient();
   const providerId = providerProfile?.id;
+  const currency = useCurrencySettings();
 
   // Fetch provider's appointments — explicit columns, no select("*") (#5)
   const appointmentsQuery = useQuery({
@@ -264,7 +267,7 @@ export const useProviderAppointments = () => {
       toast({
         title: variables.payment_status === "paid" ? "Payment Recorded" : "Payment Status Updated",
         description: variables.payment_status === "paid"
-          ? `Payment of ${variables.payment_amount ? `₹${variables.payment_amount.toLocaleString("en-IN")} via ` : ""}${variables.payment_method.toUpperCase()} recorded successfully.`
+          ? `Payment of ${variables.payment_amount ? `${formatCurrencyValue(variables.payment_amount, currency)} via ` : ""}${variables.payment_method.toUpperCase()} recorded successfully.`
           : "Payment marked as unpaid.",
       });
     },
