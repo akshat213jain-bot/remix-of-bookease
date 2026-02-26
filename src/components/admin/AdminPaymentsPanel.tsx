@@ -46,17 +46,17 @@ import { formatCurrency } from "@/lib/currency";
 const getStatusBadge = (status: string) => {
   switch (status) {
     case "succeeded":
-      return <Badge className="bg-emerald-100 text-emerald-700">Succeeded</Badge>;
+      return <Badge className="bg-primary/10 text-primary">Succeeded</Badge>;
     case "pending":
     case "processing":
-      return <Badge className="bg-amber-100 text-amber-700">Processing</Badge>;
+      return <Badge className="bg-chart-4/10 text-chart-4">Processing</Badge>;
     case "requires_payment_method":
     case "requires_confirmation":
       return <Badge variant="secondary">Pending</Badge>;
     case "canceled":
       return <Badge variant="outline">Canceled</Badge>;
     case "requires_action":
-      return <Badge className="bg-blue-100 text-blue-700">Action Required</Badge>;
+      return <Badge className="bg-accent text-accent-foreground">Action Required</Badge>;
     default:
       return <Badge variant="secondary">{status}</Badge>;
   }
@@ -132,8 +132,8 @@ const AdminPaymentsPanel = () => {
                   {revenue?.daily.count || 0} transactions
                 </p>
               </div>
-              <div className="w-10 h-10 rounded-full bg-emerald-100 flex items-center justify-center">
-                <DollarSign className="h-5 w-5 text-emerald-600" />
+              <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center">
+                <DollarSign className="h-5 w-5 text-primary" />
               </div>
             </div>
           </CardContent>
@@ -151,8 +151,8 @@ const AdminPaymentsPanel = () => {
                   {revenue?.weekly.count || 0} transactions
                 </p>
               </div>
-              <div className="w-10 h-10 rounded-full bg-blue-100 flex items-center justify-center">
-                <TrendingUp className="h-5 w-5 text-blue-600" />
+              <div className="w-10 h-10 rounded-full bg-accent flex items-center justify-center">
+                <TrendingUp className="h-5 w-5 text-accent-foreground" />
               </div>
             </div>
           </CardContent>
@@ -170,8 +170,8 @@ const AdminPaymentsPanel = () => {
                   {revenue?.monthly.count || 0} transactions
                 </p>
               </div>
-              <div className="w-10 h-10 rounded-full bg-purple-100 flex items-center justify-center">
-                <CreditCard className="h-5 w-5 text-purple-600" />
+              <div className="w-10 h-10 rounded-full bg-secondary flex items-center justify-center">
+                <CreditCard className="h-5 w-5 text-secondary-foreground" />
               </div>
             </div>
           </CardContent>
@@ -189,8 +189,8 @@ const AdminPaymentsPanel = () => {
                   Pending: {formatCurrency(balance?.pending[0]?.amount || 0)}
                 </p>
               </div>
-              <div className="w-10 h-10 rounded-full bg-amber-100 flex items-center justify-center">
-                <Wallet className="h-5 w-5 text-amber-600" />
+              <div className="w-10 h-10 rounded-full bg-muted flex items-center justify-center">
+                <Wallet className="h-5 w-5 text-muted-foreground" />
               </div>
             </div>
           </CardContent>
@@ -273,7 +273,7 @@ const AdminPaymentsPanel = () => {
                       <TableCell>
                         <div className="flex items-center gap-1">
                           {tx.status === "succeeded" ? (
-                            <ArrowUpRight className="h-3 w-3 text-emerald-500" />
+                            <ArrowUpRight className="h-3 w-3 text-primary" />
                           ) : (
                             <ArrowDownRight className="h-3 w-3 text-muted-foreground" />
                           )}

@@ -15,7 +15,13 @@ import {
   Legend,
 } from "recharts";
 
-const COLORS = ["#10B981", "#3B82F6", "#8B5CF6", "#F59E0B", "#EF4444"];
+const COLORS = [
+  "hsl(var(--primary))",
+  "hsl(var(--chart-2))",
+  "hsl(var(--chart-3))",
+  "hsl(var(--chart-4))",
+  "hsl(var(--destructive))",
+];
 
 import { formatCurrency } from "@/lib/currency";
 
@@ -70,16 +76,16 @@ const AdminRevenueCharts = () => {
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-sm text-muted-foreground">Daily Growth</p>
-                <p className={`text-2xl font-bold ${dailyGrowth >= 0 ? "text-emerald-600" : "text-red-600"}`}>
+                <p className={`text-2xl font-bold ${dailyGrowth >= 0 ? "text-primary" : "text-destructive"}`}>
                   {dailyGrowth >= 0 ? "+" : ""}{dailyGrowth.toFixed(1)}%
                 </p>
                 <p className="text-xs text-muted-foreground mt-1">vs weekly average</p>
               </div>
-              <div className={`w-10 h-10 rounded-full flex items-center justify-center ${dailyGrowth >= 0 ? "bg-emerald-100" : "bg-red-100"}`}>
+              <div className={`w-10 h-10 rounded-full flex items-center justify-center ${dailyGrowth >= 0 ? "bg-primary/10" : "bg-destructive/10"}`}>
                 {dailyGrowth >= 0 ? (
-                  <TrendingUp className="h-5 w-5 text-emerald-600" />
+                  <TrendingUp className="h-5 w-5 text-primary" />
                 ) : (
-                  <TrendingDown className="h-5 w-5 text-red-600" />
+                  <TrendingDown className="h-5 w-5 text-destructive" />
                 )}
               </div>
             </div>
@@ -91,16 +97,16 @@ const AdminRevenueCharts = () => {
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-sm text-muted-foreground">Weekly Growth</p>
-                <p className={`text-2xl font-bold ${weeklyGrowth >= 0 ? "text-emerald-600" : "text-red-600"}`}>
+                <p className={`text-2xl font-bold ${weeklyGrowth >= 0 ? "text-primary" : "text-destructive"}`}>
                   {weeklyGrowth >= 0 ? "+" : ""}{weeklyGrowth.toFixed(1)}%
                 </p>
                 <p className="text-xs text-muted-foreground mt-1">vs monthly average</p>
               </div>
-              <div className={`w-10 h-10 rounded-full flex items-center justify-center ${weeklyGrowth >= 0 ? "bg-emerald-100" : "bg-red-100"}`}>
+              <div className={`w-10 h-10 rounded-full flex items-center justify-center ${weeklyGrowth >= 0 ? "bg-primary/10" : "bg-destructive/10"}`}>
                 {weeklyGrowth >= 0 ? (
-                  <TrendingUp className="h-5 w-5 text-emerald-600" />
+                  <TrendingUp className="h-5 w-5 text-primary" />
                 ) : (
-                  <TrendingDown className="h-5 w-5 text-red-600" />
+                  <TrendingDown className="h-5 w-5 text-destructive" />
                 )}
               </div>
             </div>
@@ -217,7 +223,7 @@ const AdminRevenueCharts = () => {
               <p className="text-2xl font-bold">
                 {revenue?.yearly.count 
                   ? formatCurrency((revenue.yearly.total || 0) / revenue.yearly.count)
-                  : "₹0"}
+                  : formatCurrency(0)}
               </p>
               <p className="text-sm text-muted-foreground">Average Transaction</p>
             </div>
