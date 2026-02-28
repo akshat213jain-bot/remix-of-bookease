@@ -23,41 +23,50 @@ Deno.serve(async (req) => {
   }
 
   try {
-    const supabaseUrl = Deno.env.get("SUPABASE_URL") ?? "";
-    const supabaseServiceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? "";
+    const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
+    const supabaseServiceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
+    const supabaseAnonKey = Deno.env.get("SUPABASE_ANON_KEY")!;
 
-    const supabase = createClient(supabaseUrl, supabaseServiceKey, {
-      auth: { persistSession: false },
-    });
-
-    // Verify admin authentication
+    // Verify authentication
     const authHeader = req.headers.get("Authorization");
-    if (!authHeader) {
+    if (!authHeader?.startsWith("Bearer ")) {
       return new Response(JSON.stringify({ error: "Authorization required" }), {
         status: 401,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
 
+    // Use anon client with user's auth header to validate the token
+    const userClient = createClient(supabaseUrl, supabaseAnonKey, {
+      global: { headers: { Authorization: authHeader } },
+    });
+
     const token = authHeader.replace("Bearer ", "");
-    const { data: userData, error: userError } = await supabase.auth.getUser(token);
-    
-    if (userError || !userData.user) {
-      logStep("Auth error", { error: userError?.message });
+    const { data: claimsData, error: claimsError } = await userClient.auth.getClaims(token);
+
+    if (claimsError || !claimsData?.claims) {
+      logStep("Auth error", { error: claimsError?.message });
       return new Response(JSON.stringify({ error: "User not authenticated" }), {
         status: 401,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
 
+    const userId = claimsData.claims.sub;
+
+    // Service role client for admin operations
+    const supabase = createClient(supabaseUrl, supabaseServiceKey, {
+      auth: { persistSession: false },
+    });
+
     // Check if user is admin
     const { data: isAdmin, error: roleError } = await supabase.rpc("has_role", {
-      _user_id: userData.user.id,
+      _user_id: userId,
       _role: "admin",
     });
 
     if (roleError || !isAdmin) {
-      logStep("Access denied - not admin", { userId: userData.user.id });
+      logStep("Access denied - not admin", { userId });
       return new Response(JSON.stringify({ error: "Admin access required" }), {
         status: 403,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
@@ -65,7 +74,7 @@ Deno.serve(async (req) => {
     }
 
     const body: AnalyticsRequest = await req.json();
-    logStep(`Processing ${body.action}`, { userId: userData.user.id });
+    logStep(`Processing ${body.action}`, { userId });
 
     switch (body.action) {
       case "get_overview": {
