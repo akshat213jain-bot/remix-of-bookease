@@ -71,52 +71,32 @@ export const useProviderAvailability = () => {
     enabled: !!providerId,
   });
 
-  // Fix #10: Use upsert pattern instead of delete-then-insert to prevent data loss
   const saveAvailabilityMutation = useMutation({
     mutationFn: async (schedules: AvailabilityInput[]) => {
       if (!providerId) throw new Error("Provider profile not found");
 
-      const dataToUpsert = schedules.map((schedule) => ({
-        provider_id: providerId,
-        ...schedule,
-      }));
-
-      // Insert new records first, then delete old ones to prevent data loss
-      let insertedIds: string[] = [];
-
-      if (dataToUpsert.length > 0) {
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        const { data: inserted, error: insertError } = await (supabase as any)
-          .from("provider_availability")
-          .insert(dataToUpsert)
-          .select("id");
-
-        if (insertError) throw insertError;
-        insertedIds = (inserted || []).map((r: { id: string }) => r.id);
-      }
-
-      // Now delete old records (excluding newly inserted ones)
+      // Delete existing availability first
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      let deleteQuery = (supabase as any)
+      const { error: deleteError } = await (supabase as any)
         .from("provider_availability")
         .delete()
         .eq("provider_id", providerId);
 
-      if (insertedIds.length > 0) {
-        deleteQuery = deleteQuery.not("id", "in", `(${insertedIds.join(",")})`);
-      }
+      if (deleteError) throw deleteError;
 
-      const { error: deleteError } = await deleteQuery;
-      if (deleteError) {
-        // Rollback: delete the newly inserted records
-        if (insertedIds.length > 0) {
-          // eslint-disable-next-line @typescript-eslint/no-explicit-any
-          await (supabase as any)
-            .from("provider_availability")
-            .delete()
-            .in("id", insertedIds);
-        }
-        throw deleteError;
+      // Insert new records
+      if (schedules.length > 0) {
+        const dataToInsert = schedules.map((schedule) => ({
+          provider_id: providerId,
+          ...schedule,
+        }));
+
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        const { error: insertError } = await (supabase as any)
+          .from("provider_availability")
+          .insert(dataToInsert);
+
+        if (insertError) throw insertError;
       }
     },
     onSuccess: () => {
