@@ -1,0 +1,19 @@
+project_id = "eqbtrurgizszxdwnhhlk"
+
+[functions.send-appeal]
+verify_jwt = false
+
+[functions.brevo-webhook]
+verify_jwt = false
+
+[functions.send-password-reset-otp]
+verify_jwt = false
+
+[functions.verify-password-reset-otp]
+verify_jwt = false
+
+[functions.reset-password]
+verify_jwt = false
+
+[functions.update-payment]
+verify_jwt = false
